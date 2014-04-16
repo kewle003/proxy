@@ -17,16 +17,19 @@ public class ProxyServer {
     Socket serverSock; 
     
     // Constructor 
-    public ProxyServer (String configfilePath) { 
+    public ProxyServer (String configfilePath, int portNo) { 
         // Read the config file, and populate appropriate data structures. 
         // Create Server socket on the proxyPort and wait for the clients to 
         // connect. 
+        proxyPort = portNo;
     
         try {
             proxySock = new ServerSocket(proxyPort);
         } catch (IOException e) {
             e.printStackTrace();
         } 
+        System.out.println("Server Up");
+        System.out.println("Server Details: " + proxySock.toString());
         while (true) { 
             try {
                 clientSock = proxySock.accept();
@@ -39,6 +42,7 @@ public class ProxyServer {
     
     /* This method is used to handle client requests */ 
     private synchronized void handleRequest(Socket clientSocket) { 
+        System.out.println("Client read at "+ clientSocket.getInetAddress());
         // read the request from the client 
         // check if the request is for one of the disallowed domains. 
         // If the request is for a disallowed domain then inform the 
@@ -54,10 +58,18 @@ public class ProxyServer {
         // Cache the content locally for future use 
     } 
     // main method 
-    public static void main(String args[]) { 
+    public static void main(String args[]) throws IOException { 
         // Read the config file name and the Proxy Port. 
         // Do error checking. If no config file is specified, or if no Port is specified 
         // then exit. 
+        if (args.length != 1) {
+            System.out.println(args[0]);
+            throw new IOException("Usage: ProxyServer [0-9999]");
+        }
+        
+        int portNo = Integer.parseInt(args[0]);
+        
+        ProxyServer prox = new ProxyServer("", portNo);
     } 
 
 }
