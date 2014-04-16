@@ -1,8 +1,12 @@
 package proxy;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.StringTokenizer;
 
 public class ProxyServer {
     
@@ -42,8 +46,31 @@ public class ProxyServer {
     
     /* This method is used to handle client requests */ 
     private synchronized void handleRequest(Socket clientSocket) { 
+        StringTokenizer st;
+        
         System.out.println("Client read at "+ clientSocket.getInetAddress());
         // read the request from the client 
+        try {
+            //Get the input stream from the client
+            InputStream istream = clientSocket.getInputStream();
+            BufferedReader inLine = new BufferedReader(new InputStreamReader(istream));
+            
+            String requestLine = inLine.readLine();
+            st = new StringTokenizer(requestLine);
+            
+            String request = st.nextToken();
+            String uri = st.nextToken();
+            String protocol = st.nextToken();
+            
+            System.out.println("Request: " +request);
+            System.out.println("URI: " +uri);
+            System.out.println("Protocol: " +protocol);
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        
+        
         // check if the request is for one of the disallowed domains. 
         // If the request is for a disallowed domain then inform the 
         // client in a HTTP response. 
