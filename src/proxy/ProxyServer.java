@@ -6,14 +6,14 @@ import java.net.Socket;
 
 public class ProxyServer {
     
- // Data Members: 
+    // Data Members: 
     int proxyPort; // Proxy’s port 
     ServerSocket proxySock; // The Proxy Server will listen on this socket 
     
-   // clientSock represents the Proxy’s connection with the Client 
+    // clientSock represents the Proxy’s connection with the Client 
     Socket clientSock; ;
     
-   // serverSock represents the Proxy’s connection with a HTTP server 
+    // serverSock represents the Proxy’s connection with a HTTP server 
     Socket serverSock; 
     
     // Constructor 
@@ -38,7 +38,7 @@ public class ProxyServer {
     } 
     
     /* This method is used to handle client requests */ 
-    private void handleRequest(Socket clientSocket) { 
+    private synchronized void handleRequest(Socket clientSocket) { 
         // read the request from the client 
         // check if the request is for one of the disallowed domains. 
         // If the request is for a disallowed domain then inform the 
