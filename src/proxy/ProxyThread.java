@@ -7,55 +7,44 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.util.StringTokenizer;
 
-public class ProxyServer {
+public class ProxyThread extends Thread {
     
-    // Data Members: 
-    int proxyPort; // Proxy’s port 
-    ServerSocket proxySock; // The Proxy Server will listen on this socket 
+    protected Socket clientSocket;
+   // protected String config;
+    private int threadNum;
     
-    // clientSock represents the Proxy’s connection with the Client 
-    Socket clientSock; ;
+    private static int threadCount = 0;
     
-    // serverSock represents the Proxy’s connection with a HTTP server 
-    Socket serverSock; 
+    public ProxyThread(Socket clientSocket) {
+        super("ProxyThread");
+        this.clientSocket = clientSocket;
+        this.threadNum = threadCount;
+        threadCount++;
+    }
     
-    // Constructor 
-    public ProxyServer (String configfilePath, int portNo) { 
-        // Read the config file, and populate appropriate data structures. 
-        // Create Server socket on the proxyPort and wait for the clients to 
-        // connect. 
-        //ConfigFile cf = new ConfigFile(configfilePath);
-        proxyPort = portNo;
-    
-        try {
-            proxySock = new ServerSocket(proxyPort);
-        } catch (IOException e) {
-            e.printStackTrace();
-        } 
-        System.out.println("Server Up");
-        System.out.println("Server Details: " + proxySock.toString());
-        while (true) { 
-            try {
-                clientSock = proxySock.accept();
-            } catch (IOException e) {
-                e.printStackTrace();
-            } 
-            handleRequest(clientSock); 
-        } // end of while 
-    } 
+    /**
+     * TODO:
+     * Once up and working, String config will be ConfigFile or something
+     * @param clientSocket
+     * @param config
+     */
+    public ProxyThread(Socket clientSocket, String config) {
+        super("ProxyThread");
+        this.clientSocket= clientSocket;
+    }
     
     /* This method is used to handle client requests */ 
-    private synchronized void handleRequest(Socket clientSocket) { 
+    public synchronized void run() { 
         StringTokenizer st;
         URL url;
         HttpURLConnection connection = null;
-        System.out.println("Client read at "+ clientSocket.getInetAddress());
+        
+        System.out.println("Thread "+ threadNum + " read at "+ clientSocket.getInetAddress());
         // read the request from the client 
         try {
             //Get the input stream from the client
@@ -76,6 +65,9 @@ public class ProxyServer {
             if (!protocol.equals("HTTP/1.1")) {
                 throw new IOException("Invalid HTTP protocol");
             }
+            
+           // while ((requestLine = inLine.readLine()) != null)
+             //   System.out.println(requestLine);
             
            // if (uri.startsWith("http")) {
                 url = new URL(uri);
@@ -120,11 +112,16 @@ public class ProxyServer {
             String line;
             StringBuffer response = new StringBuffer(); 
             while((line = rd.readLine()) != null) {
-              response.append(line);
-              response.append('\r');
+              //response.append(line);
+              //response.append('\r');
+              ostream.write(line.toString().getBytes(Charset.forName("UTF-8")));
             }
             rd.close();
             //System.out.println(response.toString());
+      
+            //byte buffer[] = new byte[1024];
+            
+            //ostream.write(response.toString().getBytes(Charset.forName("UTF-8")));
             // check the Content-Type: header field of the response. 
             // if the type is not allowed then inform the client in a 
             // HTTP response. 
@@ -133,26 +130,14 @@ public class ProxyServer {
             
             
         } catch (IOException e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
+        } finally {
+            try {
+                clientSocket.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
        
     } 
-    
-    
-    // main method 
-    public static void main(String args[]) throws IOException { 
-        // Read the config file name and the Proxy Port. 
-        // Do error checking. If no config file is specified, or if no Port is specified 
-        // then exit. 
-        if (args.length != 1) {
-            System.out.println(args[0]);
-            throw new IOException("Usage: ProxyServer [0-9999]");
-        }
-        
-        int portNo = Integer.parseInt(args[0]);
-        
-        ProxyServer prox = new ProxyServer("", portNo);
-    } 
-
 }
