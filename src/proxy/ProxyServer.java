@@ -6,6 +6,7 @@ import java.net.Socket;
 
 public class ProxyServer {
     
+    private static String CWD = System.getProperty("user.dir") + "/src/proxy/";
     // Data Members: 
     int proxyPort; // Proxy’s port 
     ServerSocket proxySock; // The Proxy Server will listen on this socket 
@@ -18,7 +19,7 @@ public class ProxyServer {
         // Read the config file, and populate appropriate data structures. 
         // Create Server socket on the proxyPort and wait for the clients to 
         // connect. 
-        //ConfigFile cf = new ConfigFile(configfilePath);
+        ConfigFile cf = new ConfigFile(configfilePath);
         proxyPort = portNo;
     
         try {
@@ -30,7 +31,7 @@ public class ProxyServer {
         System.out.println("Server Details: " + proxySock.toString());
         while (true) { 
             try {
-                new ProxyThread(proxySock.accept()).start();
+                new ProxyThread(proxySock.accept(), cf).start();
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -48,9 +49,12 @@ public class ProxyServer {
             throw new IOException("Usage: ProxyServer [0-9999]");
         }
         
+        System.out.println("Working Directory = " +
+                CWD);
+        
         int portNo = Integer.parseInt(args[0]);
         
-        new ProxyServer("", portNo);
+        new ProxyServer(CWD + "config.txt", portNo);
     } 
 
 }

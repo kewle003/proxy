@@ -15,6 +15,8 @@ import java.util.StringTokenizer;
 public class ProxyThread extends Thread {
     
     protected Socket clientSocket;
+    protected ConfigFile configFile;
+    
    // protected String config;
     private int threadNum;
     
@@ -33,9 +35,10 @@ public class ProxyThread extends Thread {
      * @param clientSocket
      * @param config
      */
-    public ProxyThread(Socket clientSocket, String config) {
+    public ProxyThread(Socket clientSocket, ConfigFile configFile) {
         super("ProxyThread");
         this.clientSocket= clientSocket;
+        this.configFile = configFile;
     }
     
     /* This method is used to handle client requests */ 
