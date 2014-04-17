@@ -6,6 +6,8 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class ConfigFile {
     
@@ -33,6 +35,7 @@ public class ConfigFile {
         String currentLine = new String();
         String domainName = new String();
         String arguments = new String();
+        Pattern p = Pattern.compile("[a-zA-Z0-9]");
         
         try {
             FileReader fr = new FileReader(f);
@@ -40,13 +43,16 @@ public class ConfigFile {
             
             while ((currentLine = buf.readLine()) != null) {
                 currentLine.trim();
+                Matcher m = p.matcher(currentLine);
                 
-                if (currentLine.startsWith(COMMENT) || currentLine.length() == 0) {
+                /**
+                 * Skip comments, null lines, and blank lines
+                 */
+                if (currentLine.startsWith(COMMENT) || currentLine.length() == 0 || !(m.find())) {
                     continue;
-                } else {
-                    //Split up the string
                 }
                 
+                System.out.println(currentLine);
                 
             }
         } catch (FileNotFoundException e) {
