@@ -13,6 +13,7 @@ public class ConfigFile {
     
     private static String WILDCARD = "*";
     private static String COMMENT = "#";
+    private static String WHITESPACE = "\\s";
 
     /**
      * 
