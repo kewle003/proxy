@@ -10,6 +10,8 @@ import java.net.HttpURLConnection;
 import java.net.Socket;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.util.HashMap;
+import java.util.List;
 import java.util.StringTokenizer;
 
 public class ProxyThread extends Thread {
@@ -33,7 +35,8 @@ public class ProxyThread extends Thread {
      * TODO:
      * Once up and working, String config will be ConfigFile or something
      * @param clientSocket
-     * @param config
+     * @param configFile
+     * @param cm
      */
     public ProxyThread(Socket clientSocket, ConfigFile configFile) {
         super("ProxyThread");
@@ -46,6 +49,7 @@ public class ProxyThread extends Thread {
         StringTokenizer st;
         URL url;
         HttpURLConnection connection = null;
+        HashMap<String, List<String>> domainHash;
         
         System.out.println("Thread "+ threadNum + " read at "+ clientSocket.getInetAddress());
         // read the request from the client 
@@ -76,11 +80,22 @@ public class ProxyThread extends Thread {
                 url = new URL(uri);
             //}
             
-          
-            
+                
             // check if the request is for one of the disallowed domains. 
             // If the request is for a disallowed domain then inform the 
             // client in a HTTP response. 
+            domainHash = configFile.getDissallowedDomains();
+            String noHttp = new String();
+            if (uri.startsWith("http")) {
+                noHttp = uri.substring(7, uri.length() - 1);
+            } else {
+                noHttp = uri;
+            }
+            if (domainHash.containsKey(noHttp) || domainHash.containsKey(uri)) {
+                System.out.println("Disallowed domain encounterd: " +noHttp);
+            } else {
+                System.out.println("Domain allowed: " +noHttp);
+            }
             // satisfy the request from the local cache if possible 
             // if the request cannot be satisfied from the local cache 
             // then form a valid HTTP request and send it to the server. 

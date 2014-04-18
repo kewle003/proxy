@@ -5,15 +5,16 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
+import java.util.StringTokenizer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class ConfigFile {
     
-    private static String WILDCARD = "*";
     private static String COMMENT = "#";
-    private static String WHITESPACE = "\\s";
 
     /**
      * 
@@ -21,7 +22,7 @@ public class ConfigFile {
      * and additional arguments (*, /img, /img/jpg, /img/*, etc..)
      * <domain_name, additional_args>
      */
-    HashMap<String, String> domains;
+    HashMap<String, List<String>> domains;
     
     /**
      * This function will read in the file that has
@@ -31,11 +32,11 @@ public class ConfigFile {
      * @param filename
      */
     public ConfigFile(String filename) {
-        domains = new HashMap<String,String>();
+        domains = new HashMap<String,List<String>>();
         File f = new File(filename);
         String currentLine = new String();
         String domainName = new String();
-        String arguments = new String();
+        List<String> arguments;
         Pattern p = Pattern.compile("[a-zA-Z0-9]");
         
         try {
@@ -52,10 +53,23 @@ public class ConfigFile {
                 if (currentLine.startsWith(COMMENT) || currentLine.length() == 0 || !(m.find())) {
                     continue;
                 }
+                StringTokenizer st = new StringTokenizer(currentLine);
                 
-                System.out.println(currentLine);
+                String temp = st.nextToken();
+                if (temp.startsWith("www") || temp.startsWith("http")) {
+                    domainName = temp;
+                }
+                
+                arguments = new ArrayList<String>();
+                
+                while (st.hasMoreElements()) 
+                    arguments.add(st.nextToken());
+                
+                domains.put(domainName, arguments);
                 
             }
+            
+            buf.close();
         } catch (FileNotFoundException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -63,9 +77,17 @@ public class ConfigFile {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
+        
     }
     
-    public HashMap<String, String> getDissallowedDomains() {
+    
+    /**
+     * This returns the HashMap of the disallowed domains.
+     * This will be useful when checking if the domain exists
+     * and if so what we wish to block from it.
+     * @return
+     */
+    public HashMap<String, List<String>> getDissallowedDomains() {
         return domains;
     }
 }
