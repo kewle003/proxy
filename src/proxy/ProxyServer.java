@@ -7,7 +7,9 @@ import java.util.Date;
 
 public class ProxyServer {
     
-    private static String CWD = System.getProperty("user.dir") + "/src/proxy/";
+    private static String CWD = System.getProperty("user.dir");
+    private static String OS = System.getProperty("os.name").toLowerCase();
+    
     // Data Members: 
     int proxyPort; // ProxyÕs port 
     ServerSocket proxySock; // The Proxy Server will listen on this socket 
@@ -55,8 +57,26 @@ public class ProxyServer {
                 CWD);
         
         int portNo = Integer.parseInt(args[0]);
-        
-        new ProxyServer(CWD + "config.txt", portNo);
+        System.out.println("OS detected: " +OS);
+        /**
+         * This is how we will implement the cache max-age
+         * what we will do is grab the currentTime using Date.
+         * We will compare that to the cached date that we created.
+         */
+        Date dt = new Date(2014, 04, 16, 22, 42);
+        Date madeUp = new Date(2014, 04, 16, 22, 42);
+        System.out.println(dt.toGMTString());
+        System.out.println(madeUp.toGMTString());
+        if (dt.equals(madeUp)) {
+            System.out.println("Dates are equal!");
+        } else {
+            System.out.println("Dates are not equal...WHYYYY");
+        }
+        if (OS.indexOf("win") >= 0) {
+            new ProxyServer(CWD + "\\src\\proxy\\config.txt", portNo);
+        } else {
+            new ProxyServer(CWD + "/src/proxy/config.txt", portNo);
+        } 
     } 
 
 }
