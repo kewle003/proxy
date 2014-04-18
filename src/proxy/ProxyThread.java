@@ -10,9 +10,12 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.StringTokenizer;
 
 public class ProxyThread extends Thread {
@@ -54,6 +57,7 @@ public class ProxyThread extends Thread {
         HashMap<String, List<String>> domainHash;
         String host = "";
         int port = 0;
+        boolean isChunked = false;
         
         System.out.println("Thread "+ threadNum + " read at "+ clientSocket.getInetAddress());
         // read the request from the client 
@@ -158,13 +162,35 @@ public class ProxyThread extends Thread {
          
             //get all headers
             System.out.println("******** Recieved Headers for debugging  **************");
-            Map<String, List<String>> map = conn.getHeaderFields();
-            for (Map.Entry<String, List<String>> entry : map.entrySet()) {
-                System.out.println("Key : " + entry.getKey() + 
-                         " Value : " + entry.getValue());
+            Map<String, List<String>> headerFields = conn.getHeaderFields();
+    
+            Set<String> headerFieldsSet = headerFields.keySet();
+            Iterator<String> hearerFieldsIter = headerFieldsSet.iterator();
+
+            while (hearerFieldsIter.hasNext()) {
+                String headerFieldKey = hearerFieldsIter.next();
+                List<String> headerFieldValue = headerFields.get(headerFieldKey);
+                         
+                StringBuilder sb = new StringBuilder();
+     
+                for (String value : headerFieldValue) {
+                    sb.append(value);
+                    sb.append("");
+                }
+                System.out.println(headerFieldKey + "=" + sb.toString());
+                if (headerFieldKey != null) {
+                    if (headerFieldKey.equals("Transfer-Encoding")) {
+                        if (sb != null) {
+                            if (sb.toString().toLowerCase().equals("chunked")) {
+                                System.out.println("##################CHUNKKKKKEEEDDDDD FUUUUCKKKKK####################");
+                                isChunked = true;
+                            }
+                        }
+                    }
+                }
             }
             System.out.println("******** End of Recieved Headers for debugging  **************");
-            
+          
             // Send the response to the client
             
             byte buffer[]  = new byte[8192]; 
