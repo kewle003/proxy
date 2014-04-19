@@ -86,7 +86,11 @@ public class ProxyThread extends Thread {
                     serverSocket.close();
                 } else {
                     //Parse the argumentList for disallowed types and build the disallowed Header.
-                    HTTPHeader header = new HTTPHeader("Accept");
+                    List<String> headerList = httpReq.getValueOfRequestHeader("Accept");
+                    List<String> tempList = new ArrayList<String>();
+                    for (String args : argumentList) {
+                        
+                    }
                 }
                 return;
             } else {

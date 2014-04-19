@@ -11,6 +11,8 @@ import java.util.StringTokenizer;
  * It contains the header name as well as it's argument
  * list stored as <code>List<String></code>.
  * 
+ * FIELD-NAME ":" [FIELD-VALUE] CRLF
+ * 
  * @author mark
  *
  */
@@ -103,6 +105,8 @@ public class HTTPHeader {
         }
         //Remove last , on arg list
         s.deleteCharAt(s.lastIndexOf(","));
+        //Append the CRF
+        s.append("\r\n");
         return s.toString();
     }
     

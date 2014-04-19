@@ -93,23 +93,20 @@ public class HTTPRequest {
                 HTTPHeader header = new HTTPHeader();
                 header.parseHeader(requestLine);
                 headerList.add(header);
-                //headerWriter.println(requestLine);
+               // headerWriter.println(requestLine);
                 requestLine = inLine.readLine();     
             }
         
-            headerWriter.flush();
+           // headerWriter.flush();
             System.out.println("******** Buffered Headers for debugging  **************");
             for (HTTPHeader header : headerList) {
-                System.out.print(header.getHeaderName()+ " = ");
-                for (String args : header.getArguments()) {
-                    System.out.print( args + ",");
-                }
-                System.out.print("\n");
+                System.out.println(header.toString());
             }
+            System.out.println("/r/n/r/n");
             System.out.println("******** End of Buffered Headers for debugging  **************");
-            //System.out.println("******** WHAT THEY SHOULD BE ***************");
-            //System.out.println(headerBuf.toString());
-            //System.out.println("********* END OF WHAT THEY SHOULD BE ******************");
+           // System.out.println("******** WHAT THEY SHOULD BE ***************");
+           // System.out.println(headerBuf.toString());
+           // System.out.println("********* END OF WHAT THEY SHOULD BE ******************");
         } else {
             //DO HEAD REQUEST
         }
@@ -145,6 +142,8 @@ public class HTTPRequest {
         for (HTTPHeader headers : headerList) {
             headerWriter.print(headers.toString());
         }
+        headerWriter.print("/r/n/r/n");
+        headerWriter.flush();
         return headerBuf.toString().getBytes();
     }
     
