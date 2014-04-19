@@ -3,18 +3,21 @@ package proxy;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Calendar;
 import java.util.Date;
+import java.util.logging.Logger;
 
 public class ProxyServer {
     
     private static String CWD = System.getProperty("user.dir");
     private static String OS = System.getProperty("os.name").toLowerCase();
+    private static Logger logger  = Logger.getLogger("MyLogger");
     
     // Data Members: 
-    int proxyPort; // ProxyÕs port 
+    int proxyPort; // Proxyï¿½s port
     ServerSocket proxySock; // The Proxy Server will listen on this socket 
     
-    // serverSock represents the ProxyÕs connection with a HTTP server 
+    // serverSock represents the Proxyï¿½s connection with a HTTP server 
     Socket serverSock; 
     
     // Constructor 
@@ -30,7 +33,9 @@ public class ProxyServer {
             proxySock = new ServerSocket(proxyPort);
         } catch (IOException e) {
             e.printStackTrace();
-        } 
+        }
+
+        logger.info("Server UP");
         System.out.println("Server Up");
         System.out.println("Server Details: " + proxySock.toString());
         while (true) { 
@@ -58,16 +63,9 @@ public class ProxyServer {
         
         int portNo = Integer.parseInt(args[0]);
         System.out.println("OS detected: " +OS);
-        /**
-         * This is how we will implement the cache max-age
-         * what we will do is grab the currentTime using Date.
-         * We will compare that to the cached date that we created.
-         */
-        Date dt = new Date(2014, 04, 16, 22, 42);
-        Date madeUp = new Date(2014, 04, 16, 22, 42);
-        System.out.println(dt.toGMTString());
-        System.out.println(madeUp.toGMTString());
-        if (dt.equals(madeUp)) {
+
+
+        if (true) {
             System.out.println("Dates are equal!");
         } else {
             System.out.println("Dates are not equal...WHYYYY");
