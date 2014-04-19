@@ -93,12 +93,8 @@ public class HTTPRequest {
                 HTTPHeader header = new HTTPHeader();
                 header.parseHeader(requestLine);
                 headerList.add(header);
-               // headerWriter.println(requestLine);
-                headerWriter.println(requestLine);
                 requestLine = inLine.readLine();
             }
-        
-           // headerWriter.flush();
             System.out.println("******** Buffered Headers for debugging  **************");
             for (HTTPHeader header : headerList) {
                 System.out.println(header.toString());
@@ -145,9 +141,6 @@ public class HTTPRequest {
         }
         headerWriter.print("/r/n/r/n");
         headerWriter.flush();
-//        for (HTTPHeader headers : headerList) {
-//            headerWriter.print(headers.toString());
-//        }
         return headerBuf.toString().getBytes();
     }
     
