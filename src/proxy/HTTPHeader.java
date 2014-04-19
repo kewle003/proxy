@@ -1,6 +1,7 @@
 package proxy;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.StringTokenizer;
 
@@ -17,6 +18,7 @@ public class HTTPHeader {
     
     private String headerName;
     private List<String> arguments;
+    private Date cacheAge;
     
     /**
      * Default Constructor
@@ -54,6 +56,9 @@ public class HTTPHeader {
         StringTokenizer st = new StringTokenizer(parseLine, ": ");
         
         headerName = st.nextToken();
+        if (headerName.equals("Date")) {
+            
+        }
         
         //Get the argument list
         while (st.hasMoreElements()) {
