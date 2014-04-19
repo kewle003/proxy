@@ -5,7 +5,9 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.logging.FileHandler;
 import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
 
 public class ProxyServer {
     
@@ -21,14 +23,29 @@ public class ProxyServer {
     Socket serverSock; 
     
     // Constructor 
-    public ProxyServer (String configfilePath, int portNo) { 
-        // Read the config file, and populate appropriate data structures. 
-        // Create Server socket on the proxyPort and wait for the clients to 
-        // connect. 
-        //Set up the CacheManager
+    public ProxyServer (String configfilePath, int portNo) {
+
+        FileHandler fileHandler;
+
+        try {
+            // This block configure the logger with handler and formatter
+            fileHandler = new FileHandler("LoggerFile");
+            logger.addHandler(fileHandler);
+            SimpleFormatter formatter = new SimpleFormatter();
+            fileHandler.setFormatter(formatter);
+
+            // the following statement is used to log any messages
+            logger.info("yay!!!");
+
+        } catch (SecurityException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
         ConfigFile cf = new ConfigFile(configfilePath);
         proxyPort = portNo;
-    
+
         try {
             proxySock = new ServerSocket(proxyPort);
         } catch (IOException e) {
