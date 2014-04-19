@@ -31,4 +31,4 @@ www.microsoft.com     image/jpg image/gif
 www.sco.com              image/*
 
 
-clients1.google.com          image/*
+www.images.google.com         image/*
