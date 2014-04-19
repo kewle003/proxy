@@ -74,7 +74,10 @@ public class ProxyThread extends Thread {
             domainHash = configFile.getDissallowedDomains();
             if (domainHash.containsKey(httpReq.getHost())) {
                 System.out.println("Disallowed domain encounterd: " +httpReq.getHost());
-                String data = "<html><head><meta http-equiv=\"content-type\" content=\"text/html; charset=ISO-8859-1\"></head><body><h1>This site is blocked, we apologize</h1></body></html>";
+                String data = "<html><head><meta http-equiv=\"content-type\" content=\"text/html; "
+                        + "charset=ISO-8859-1\"></head><body><h1>Access Forbidden!</h1>"
+                        + "<h3><span style=\"color:red;\">"+httpReq.getHost()+"</span> is a blocked site!</h3>"
+                                + "</body></html>";
                 StringBuilder errScreen = new StringBuilder("");
                 errScreen.append("HTTP/1.1 403 Forbidden\r\n");
                 errScreen.append("Content-Type: text/html\r\n");
