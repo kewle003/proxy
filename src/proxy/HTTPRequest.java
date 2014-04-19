@@ -23,6 +23,7 @@ public class HTTPRequest {
     private int port;
     private String host;
     private ByteArrayOutputStream headerBuf;
+    private PrintWriter headerWriter;
     private RequestLine reqLine;
     private List<HTTPHeader> headerList;
     
@@ -55,7 +56,7 @@ public class HTTPRequest {
         
         //Create output buffers for the serverSocket
         headerBuf = new ByteArrayOutputStream(BUF_SIZE);
-        PrintWriter headerWriter = new PrintWriter( headerBuf );
+        headerWriter = new PrintWriter( headerBuf );
         
         
         //Read the request-line
@@ -92,7 +93,7 @@ public class HTTPRequest {
                 HTTPHeader header = new HTTPHeader();
                 header.parseHeader(requestLine);
                 headerList.add(header);
-                headerWriter.println(requestLine);
+                //headerWriter.println(requestLine);
                 requestLine = inLine.readLine();     
             }
         
@@ -141,6 +142,9 @@ public class HTTPRequest {
      * @return - The data to be written to the server
      */
     public byte[] getRequestData() {
+        for (HTTPHeader headers : headerList) {
+            headerWriter.print(headers.toString());
+        }
         return headerBuf.toString().getBytes();
     }
     

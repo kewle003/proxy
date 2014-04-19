@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
@@ -73,21 +74,20 @@ public class ProxyThread extends Thread {
             // client in a HTTP response. 
             domainHash = configFile.getDissallowedDomains();
             if (domainHash.containsKey(httpReq.getHost())) {
-                System.out.println("Disallowed domain encounterd: " +httpReq.getHost());
-                String data = "<html><head><meta http-equiv=\"content-type\" content=\"text/html; "
-                        + "charset=ISO-8859-1\"></head><body><h1>Access Forbidden!</h1>"
-                        + "<h3><span style=\"color:red;\">"+httpReq.getHost()+"</span> is a blocked site!</h3>"
-                                + "</body></html>";
-                StringBuilder errScreen = new StringBuilder("");
-                errScreen.append("HTTP/1.1 403 Forbidden\r\n");
-                errScreen.append("Content-Type: text/html\r\n");
-                errScreen.append("Content-Length: ");
-                errScreen.append(data.length());
-                errScreen.append("\r\n\r\n");
-                errScreen.append(data);
-                ostream.write(errScreen.toString().getBytes());
-                clientSocket.close();
-                serverSocket.close();
+                ArrayList<String> argumentList = (ArrayList<String>) domainHash.get(httpReq.getHost());
+                if (argumentList.size() == 0) {
+                    System.out.println("Disallowed domain encounterd: " +httpReq.getHost());
+                    ostream.write(getBlockedSiteScreen(httpReq.getHost()));
+                    clientSocket.close();
+                    serverSocket.close();
+                } else if (argumentList.get(0).equals("*")) {
+                    ostream.write(getBlockedSiteScreen(httpReq.getHost()));
+                    clientSocket.close();
+                    serverSocket.close();
+                } else {
+                    //Parse the argumentList for disallowed types and build the disallowed Header.
+                    HTTPHeader header = new HTTPHeader("Accept");
+                }
                 return;
             } else {
                 System.out.println("Domain allowed: " +httpReq.getHost());
@@ -147,6 +147,21 @@ public class ProxyThread extends Thread {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+    
+    public byte[] getBlockedSiteScreen(String uri) {
+        String data = "<html><head><meta http-equiv=\"content-type\" content=\"text/html; "
+                + "charset=ISO-8859-1\"></head><body><h1>Access Forbidden!</h1>"
+                + "<h3><span style=\"color:red;\">"+uri+"</span> is a blocked site!</h3>"
+                    + "</body></html>";
+        StringBuilder errScreen = new StringBuilder("");
+        errScreen.append("HTTP/1.1 403 Forbidden\r\n");
+        errScreen.append("Content-Type: text/html\r\n");
+        errScreen.append("Content-Length: ");
+        errScreen.append(data.length());
+        errScreen.append("\r\n\r\n");
+        errScreen.append(data);
+        return errScreen.toString().getBytes();
     }
     
     

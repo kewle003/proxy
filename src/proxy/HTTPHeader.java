@@ -92,6 +92,20 @@ public class HTTPHeader {
         return arguments;
     }
     
+    public void buildAllowedArgumentList(String dissallowedArgs) {
+        
+    }
+    
+    public String toString() {
+        StringBuilder s = new StringBuilder(headerName+": ");
+        for (String args : arguments) {
+            s.append(args + ",");
+        }
+        //Remove last , on arg list
+        s.deleteCharAt(s.lastIndexOf(","));
+        return s.toString();
+    }
+    
     @Override
     public boolean equals(Object o) {
         if (o.getClass() != HTTPHeader.class)
