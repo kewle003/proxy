@@ -1,23 +1,12 @@
 package proxy;
 
-import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.PrintWriter;
 import java.net.Socket;
-import java.net.URL;
-import java.net.URLConnection;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.StringTokenizer;
 
 public class ProxyThread extends Thread {
     
@@ -56,7 +45,6 @@ public class ProxyThread extends Thread {
     
     /* This method is used to handle client requests */ 
     public synchronized void run() { 
-        StringTokenizer st;
         HashMap<String, List<String>> domainHash;
         boolean isChunked = false;
         
@@ -92,55 +80,14 @@ public class ProxyThread extends Thread {
             // satisfy the request from the local cache if possible 
             // if the request cannot be satisfied from the local cache 
             // then form a valid HTTP request and send it to the server. 
-            
-            
-            
             String terminator = new String("Connection:close\n\n"); /* Prof said we should do this for this assignment */
-            
             rawOut.write(httpReq.getRequestData());
             rawOut.write(terminator.getBytes());
-            
             // check the Content-Type: header field of the response. 
             // if the type is not allowed then inform the client in a 
             // HTTP response. 
-            
-            /**
-             * This is the only way I know that we can get headers from response without
-             * affecting CHUNKED writes
-             */
-            URL obj = new URL(httpReq.getRequestLine().getURI());
-            URLConnection conn = obj.openConnection();
-         
-            //get all headers
-            System.out.println("******** Recieved Headers for debugging  **************");
-            Map<String, List<String>> headerFields = conn.getHeaderFields();
-    
-            Set<String> headerFieldsSet = headerFields.keySet();
-            Iterator<String> hearerFieldsIter = headerFieldsSet.iterator();
-
-            while (hearerFieldsIter.hasNext()) {
-                String headerFieldKey = hearerFieldsIter.next();
-                List<String> headerFieldValue = headerFields.get(headerFieldKey);
-                         
-                StringBuilder sb = new StringBuilder();
-     
-                for (String value : headerFieldValue) {
-                    sb.append(value);
-                    sb.append("");
-                }
-                System.out.println(headerFieldKey + "=" + sb.toString());
-                if (headerFieldKey != null) {
-                    if (headerFieldKey.equals("Transfer-Encoding")) {
-                        if (sb != null) {
-                            if (sb.toString().toLowerCase().equals("chunked")) {
-                                System.out.println("##################CHUNKKKKKEEEDDDDD FUUUUCKKKKK####################");
-                                isChunked = true;
-                            }
-                        }
-                    }
-                }
-            }
-            System.out.println("******** End of Recieved Headers for debugging  **************");
+            HTTPResponse resp = new HTTPResponse();
+            resp.parseHeaders(httpReq.getRequestLine().getURI());
           
             // Send the response to the client
             writeResponse(rawIn, ostream);
@@ -155,6 +102,8 @@ public class ProxyThread extends Thread {
             
             
         } catch (IOException e) {
+            e.printStackTrace();
+        } catch (Exception e) {
             e.printStackTrace();
         } finally {
             try {
