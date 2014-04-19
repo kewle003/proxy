@@ -2,6 +2,7 @@ package proxy;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -25,6 +26,8 @@ public class ProxyThread extends Thread {
     protected ConfigFile configFile;
     protected OutputStream rawOut;
     protected InputStream rawIn;
+    
+    private int BUF_SIZE = 8192;
     
    // protected String config;
     private int threadNum;
@@ -55,8 +58,6 @@ public class ProxyThread extends Thread {
     public synchronized void run() { 
         StringTokenizer st;
         HashMap<String, List<String>> domainHash;
-        String host = "";
-        int port = 0;
         boolean isChunked = false;
         
         System.out.println("Thread "+ threadNum + " read at "+ clientSocket.getInetAddress());
@@ -66,53 +67,11 @@ public class ProxyThread extends Thread {
             InputStream istream = clientSocket.getInputStream();
             OutputStream ostream = clientSocket.getOutputStream();
             
-            //Create a Line Buffer for reading a line at a time
-            BufferedReader inLine = new BufferedReader(new InputStreamReader(istream));
+            HTTPRequest httpReq = new HTTPRequest();
+            httpReq.parseRequest(istream);
             
-            //Create output buffers for the serverSocket
-            ByteArrayOutputStream headerBuf = new ByteArrayOutputStream(8096);
-            PrintWriter headerWriter = new PrintWriter( headerBuf );
-            
-            
-            //Read the request-line
-            String requestLine = inLine.readLine();
-            headerWriter.println(requestLine);
-            
-            st = new StringTokenizer(requestLine);
-            String request = st.nextToken(); /* GET, POST, HEAD */
-            String uri = st.nextToken(); /* http://www.example.com */
-            String protocol = st.nextToken(); /* HTTP1.1/1.0 */
-            
-            if (!protocol.equals("HTTP/1.1")) {
-                throw new IOException("Invalid HTTP protocol");
-            }
-            
-            System.out.println("*****DEBUG**** request-line: Request=" +request+ " uri=" +uri+ " protocol=" +protocol);
-            
-            requestLine = inLine.readLine();
-            System.out.println(requestLine);
-            if (requestLine.contains("Host")) {
-                st = new StringTokenizer(requestLine, ": ");
-                String fieldName = st.nextToken(); /* Expect HOST fieldName */
-                if (fieldName.equals("Host")) {
-                    host = st.nextToken();
-                    String portString = new String("");
-                    try {
-                        portString = st.nextToken();
-                    } catch (Exception NoSuchElement) {
-                        System.out.println("No port discovered");
-                    }
-                    //If there was no port, we will have an empty string
-                    if (portString.length() == 0) {
-                        port = 80;
-                    } else {
-                        port = Integer.parseInt(portString);
-                    }
-                }     
-            }
-            
-            if (host.length() != 0) {
-                serverSocket =  new Socket(host, port);
+            if (httpReq.getHost().length() != 0) {
+                serverSocket =  new Socket(httpReq.getHost(), httpReq.getPort());
                 rawOut = serverSocket.getOutputStream();
                 rawIn = serverSocket.getInputStream();
             } else {
@@ -125,28 +84,20 @@ public class ProxyThread extends Thread {
             // If the request is for a disallowed domain then inform the 
             // client in a HTTP response. 
             domainHash = configFile.getDissallowedDomains();
-            if (domainHash.containsKey(host)) {
-                System.out.println("Disallowed domain encounterd: " +host);
+            if (domainHash.containsKey(httpReq.getHost())) {
+                System.out.println("Disallowed domain encounterd: " +httpReq.getHost());
             } else {
-                System.out.println("Domain allowed: " +host);
+                System.out.println("Domain allowed: " +httpReq.getHost());
             }
             // satisfy the request from the local cache if possible 
             // if the request cannot be satisfied from the local cache 
             // then form a valid HTTP request and send it to the server. 
             
-            /* Read in the rest of the request */
-            while (requestLine.length() != 0) {
-                headerWriter.println(requestLine);
-                requestLine = inLine.readLine();     
-            }
-            headerWriter.flush();
-            System.out.println("******** Buffered Headers for debugging  **************");
-            System.out.print( headerBuf.toString() );
-            System.out.println("******** End of Buffered Headers for debugging  **************");
+            
             
             String terminator = new String("Connection:close\n\n"); /* Prof said we should do this for this assignment */
             
-            rawOut.write(headerBuf.toString().getBytes());
+            rawOut.write(httpReq.getRequestData());
             rawOut.write(terminator.getBytes());
             
             // check the Content-Type: header field of the response. 
@@ -157,7 +108,7 @@ public class ProxyThread extends Thread {
              * This is the only way I know that we can get headers from response without
              * affecting CHUNKED writes
              */
-            URL obj = new URL(uri);
+            URL obj = new URL(httpReq.getRequestLine().getURI());
             URLConnection conn = obj.openConnection();
          
             //get all headers
@@ -192,15 +143,7 @@ public class ProxyThread extends Thread {
             System.out.println("******** End of Recieved Headers for debugging  **************");
           
             // Send the response to the client
-            
-            byte buffer[]  = new byte[8192]; 
-            int count; 
-             while ( (count = rawIn.read( buffer, 0, 8192)) > -1)  {
-                  ostream.write(buffer, 0, count);  
-                   /*****************************************************************************************************************/
-                   /****  You will need to add code to read response line and headers as this code does for the request headers  ****/ 
-                   /*****************************************************************************************************************/
-             }
+            writeResponse(rawIn, ostream);
            
             System.out.println ("Client exit.");
             System.out.println ("---------------------------------------------------");
@@ -227,4 +170,18 @@ public class ProxyThread extends Thread {
         }
        
     } 
+    
+    public synchronized void writeResponse(InputStream istream, OutputStream ostream) {
+        //Client's ostream
+        DataOutputStream out = new DataOutputStream(ostream);
+        byte buffer[]  = new byte[BUF_SIZE]; 
+        int count; 
+         try {
+            while ( (count = istream.read( buffer, 0, BUF_SIZE)) > -1)  {
+                  out.write(buffer, 0, count);  
+             }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 }
