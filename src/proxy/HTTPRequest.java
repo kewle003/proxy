@@ -7,6 +7,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.StringTokenizer;
 
@@ -26,11 +27,13 @@ public class HTTPRequest {
     private PrintWriter headerWriter;
     private RequestLine reqLine;
     private List<HTTPHeader> headerList;
+    private List<String> dissAllowedArgs;
     
     public HTTPRequest() {
         port = 0;
         host = new String("");
         headerList = new ArrayList<HTTPHeader>();
+        this.dissAllowedArgs = new ArrayList<String>();
     }
 
     /**
@@ -93,17 +96,20 @@ public class HTTPRequest {
                 HTTPHeader header = new HTTPHeader();
                 header.parseHeader(requestLine);
                 headerList.add(header);
+                headerWriter.println(requestLine);
                 requestLine = inLine.readLine();
+                
             }
-            System.out.println("******** Buffered Headers for debugging  **************");
+            headerWriter.flush();
+            /*System.out.println("******** Buffered Headers for debugging  **************");
             for (HTTPHeader header : headerList) {
                 System.out.println(header.toString());
             }
             System.out.println("/r/n/r/n");
             System.out.println("******** End of Buffered Headers for debugging  **************");
-           // System.out.println("******** WHAT THEY SHOULD BE ***************");
-           // System.out.println(headerBuf.toString());
-           // System.out.println("********* END OF WHAT THEY SHOULD BE ******************");
+            System.out.println("******** WHAT THEY SHOULD BE ***************");
+            System.out.println(headerBuf.toString());
+            System.out.println("********* END OF WHAT THEY SHOULD BE ******************");*/
         } else {
             //DO HEAD REQUEST
         }
@@ -128,6 +134,26 @@ public class HTTPRequest {
         return null;
     }
     
+    public List<String> getDissAllowedArgs() {
+        return dissAllowedArgs;
+    }
+    
+    public boolean isAllowed(ConfigFile configFile) {
+        HashMap<String, List<String>> domainHash = configFile.getDissallowedDomains();
+        if (domainHash.containsKey(host)) {
+            dissAllowedArgs = (ArrayList<String>) domainHash.get(host);
+            if (dissAllowedArgs.size() == 0) {
+                System.out.println("Disallowed domain encounterd: " +host);
+               
+                return false;
+            } else if (dissAllowedArgs.get(0).equals("*")) {
+                return false;
+            }
+        } 
+        System.out.println("Domain allowed: " +host);
+        return true;
+    }
+    
     /**
      * 
      * This method grabs the data as an array
@@ -136,11 +162,6 @@ public class HTTPRequest {
      * @return - The data to be written to the server
      */
     public byte[] getRequestData() {
-        for (HTTPHeader headers : headerList) {
-            headerWriter.print(headers.toString());
-        }
-        headerWriter.print("/r/n/r/n");
-        headerWriter.flush();
         return headerBuf.toString().getBytes();
     }
     

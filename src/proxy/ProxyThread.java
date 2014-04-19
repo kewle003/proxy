@@ -72,23 +72,10 @@ public class ProxyThread extends Thread {
             // check if the request is for one of the disallowed domains. 
             // If the request is for a disallowed domain then inform the 
             // client in a HTTP response. 
-            domainHash = configFile.getDissallowedDomains();
-            if (domainHash.containsKey(httpReq.getHost())) {
-                ArrayList<String> argumentList = (ArrayList<String>) domainHash.get(httpReq.getHost());
-                if (argumentList.size() == 0) {
-                    System.out.println("Disallowed domain encounterd: " +httpReq.getHost());
-                    ostream.write(getBlockedSiteScreen(httpReq.getHost()));
-                    clientSocket.close();
-                    serverSocket.close();
-                    return;
-                } else if (argumentList.get(0).equals("*")) {
-                    ostream.write(getBlockedSiteScreen(httpReq.getHost()));
-                    clientSocket.close();
-                    serverSocket.close();
-                    return;
-                }
-            } else {
-                System.out.println("Domain allowed: " +httpReq.getHost());
+            if (!httpReq.isAllowed(configFile)) {
+                ostream.write(getBlockedSiteScreen(httpReq.getRequestLine().getURI()));
+                clientSocket.close();
+                serverSocket.close();
             }
             // satisfy the request from the local cache if possible 
             // if the request cannot be satisfied from the local cache 
@@ -102,10 +89,17 @@ public class ProxyThread extends Thread {
             HTTPResponse resp = new HTTPResponse();
             resp.parseHeaders(httpReq.getRequestLine().getURI());
             
-            
-          
+           
             // Send the response to the client
-            writeResponse(rawIn, ostream);
+            if (httpReq.getDissAllowedArgs().size() > 0) {
+                if (validateResponse(httpReq.getValueOfRequestHeader("Content-Type"), httpReq.getDissAllowedArgs()))  {
+                    writeResponse(rawIn, ostream);
+                } else {
+                    ostream.write(getErrorMessage());
+                }
+            } else {
+                writeResponse(rawIn, ostream);
+            }
            
             System.out.println ("Client exit.");
             System.out.println ("---------------------------------------------------");
@@ -162,6 +156,38 @@ public class ProxyThread extends Thread {
         errScreen.append("\r\n\r\n");
         errScreen.append(data);
         return errScreen.toString().getBytes();
+    }
+    
+    public byte[] getErrorMessage() {
+        String data = "<html><head><meta meta http-equiv=\"content-type\" content=\"text/html; "
+                + "charset=ISO-8859-1\"></head><body>Forbidden Content!</body></html>";
+        StringBuilder errScreen = new StringBuilder("");
+        errScreen.append("HTTP/1.1 403 Forbidden\r\n");
+        errScreen.append("Content-Type: text/html\r\n");
+        errScreen.append("Content-Length: ");
+        errScreen.append(data.length());
+        errScreen.append("\r\n\r\n");
+        errScreen.append(data);
+        return errScreen.toString().getBytes();
+    }
+    
+    public boolean validateResponse(List<String> args, List<String> dissAllowedArgs) {
+        String allImages = "image/*";
+        boolean blockAllImages = false;
+        if (dissAllowedArgs.contains(allImages)) {
+            blockAllImages = true;
+        }
+        for (String arg : args) {
+            if (blockAllImages) {
+                if (arg.contains("image")) {
+                    return false;
+                }
+            } else if (dissAllowedArgs.contains(arg)) {
+                return false;
+            }
+        }
+        
+        return true;
     }
     
     
