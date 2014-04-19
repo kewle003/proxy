@@ -94,7 +94,8 @@ public class HTTPRequest {
                 header.parseHeader(requestLine);
                 headerList.add(header);
                // headerWriter.println(requestLine);
-                requestLine = inLine.readLine();     
+                headerWriter.println(requestLine);
+                requestLine = inLine.readLine();
             }
         
            // headerWriter.flush();
@@ -144,6 +145,9 @@ public class HTTPRequest {
         }
         headerWriter.print("/r/n/r/n");
         headerWriter.flush();
+//        for (HTTPHeader headers : headerList) {
+//            headerWriter.print(headers.toString());
+//        }
         return headerBuf.toString().getBytes();
     }
     
