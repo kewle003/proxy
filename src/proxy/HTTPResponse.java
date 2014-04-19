@@ -50,16 +50,7 @@ public class HTTPResponse {
                    arguments.add(value);
                }
                System.out.println(headerFieldKey + "=" + sb.toString());
-               headerList.add(new HTTPHeader(headerFieldKey, arguments));
-               if (headerFieldKey != null) {
-                   if (headerFieldKey.equals("Transfer-Encoding")) {
-                       if (sb != null) {
-                           if (sb.toString().toLowerCase().equals("chunked")) {
-                               System.out.println("##################CHUNKKKKKEEEDDDDD FUUUUCKKKKK####################");
-                           }
-                       }
-                   }
-               }
+               headerList.add(new HTTPHeader(headerFieldKey, arguments)); 
            }
            System.out.println("******** End of Recieved Headers for debugging  **************");
            System.out.println("******** BEGIN OF STORED HEADERS FOR DEBUG *******************");

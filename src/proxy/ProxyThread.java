@@ -86,18 +86,6 @@ public class ProxyThread extends Thread {
                     clientSocket.close();
                     serverSocket.close();
                     return;
-                } else {
-                    System.out.println("**************ATTEMPT OF MODIFIYING ACCEPT*******************************");
-                    System.out.println("Accept has arguments: " +httpReq.getValueOfRequestHeader("Accept").toString());
-                    List<String> newArgs = configFile.createNewArgumentList(httpReq.getValueOfRequestHeader("Accept"), httpReq.getHost());
-                    List<HTTPHeader> headers = httpReq.getHeaders();
-                    for (HTTPHeader h : headers) {
-                        if (h.getHeaderName().equals("Accept")) {
-                            h.setArguments(newArgs);
-                        }
-                    }
-                    System.out.println("Accept has new arguments: " +httpReq.getValueOfRequestHeader("Accept").toString());
-                    System.out.println("*******************************************************************");
                 }
             } else {
                 System.out.println("Domain allowed: " +httpReq.getHost());
@@ -113,6 +101,8 @@ public class ProxyThread extends Thread {
             // HTTP response. 
             HTTPResponse resp = new HTTPResponse();
             resp.parseHeaders(httpReq.getRequestLine().getURI());
+            
+            
           
             // Send the response to the client
             writeResponse(rawIn, ostream);
