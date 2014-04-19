@@ -80,19 +80,25 @@ public class ProxyThread extends Thread {
                     ostream.write(getBlockedSiteScreen(httpReq.getHost()));
                     clientSocket.close();
                     serverSocket.close();
+                    return;
                 } else if (argumentList.get(0).equals("*")) {
                     ostream.write(getBlockedSiteScreen(httpReq.getHost()));
                     clientSocket.close();
                     serverSocket.close();
+                    return;
                 } else {
-                    //Parse the argumentList for disallowed types and build the disallowed Header.
-                    List<String> headerList = httpReq.getValueOfRequestHeader("Accept");
-                    List<String> tempList = new ArrayList<String>();
-                    for (String args : argumentList) {
-                        
+                    System.out.println("**************ATTEMPT OF MODIFIYING ACCEPT*******************************");
+                    System.out.println("Accept has arguments: " +httpReq.getValueOfRequestHeader("Accept").toString());
+                    List<String> newArgs = configFile.createNewArgumentList(httpReq.getValueOfRequestHeader("Accept"), httpReq.getHost());
+                    List<HTTPHeader> headers = httpReq.getHeaders();
+                    for (HTTPHeader h : headers) {
+                        if (h.getHeaderName().equals("Accept")) {
+                            h.setArguments(newArgs);
+                        }
                     }
+                    System.out.println("Accept has new arguments: " +httpReq.getValueOfRequestHeader("Accept").toString());
+                    System.out.println("*******************************************************************");
                 }
-                return;
             } else {
                 System.out.println("Domain allowed: " +httpReq.getHost());
             }

@@ -144,6 +144,10 @@ public class HTTPRequest {
         return headerBuf.toString().getBytes();
     }
     
+    public List<HTTPHeader> getHeaders() {
+        return headerList;
+    }
+    
     public RequestLine getRequestLine() {
         return reqLine;
     }

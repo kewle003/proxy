@@ -29,3 +29,6 @@ www.microsoft.com     image/jpg image/gif
 # block all images i.e. gif, jpeg, png, etc.
 
 www.sco.com              image/*
+
+
+clients1.google.com          image/*

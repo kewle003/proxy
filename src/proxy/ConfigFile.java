@@ -90,4 +90,27 @@ public class ConfigFile {
     public HashMap<String, List<String>> getDissallowedDomains() {
         return domains;
     }
+    
+    public List<String> createNewArgumentList(List<String> oldArgList, String key) {
+        List<String> newArgList = new ArrayList<String>();
+        ArrayList<String> dissAllowedArgs = (ArrayList<String>) domains.get(key);
+        String allImages = "/img/*";
+        boolean blockAllImages = false;
+        if (dissAllowedArgs.contains(allImages)) {
+            blockAllImages = true;
+        }
+        for (String arg : oldArgList) {
+            if (blockAllImages) {
+                if (!arg.contains("img")) {
+                    newArgList.add(arg);
+                }
+            } else {
+                if (!dissAllowedArgs.contains(arg)) {
+                    newArgList.add(arg);
+                }
+            }
+        }
+        
+        return newArgList;
+    }
 }

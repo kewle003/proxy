@@ -94,8 +94,8 @@ public class HTTPHeader {
         return arguments;
     }
     
-    public void buildAllowedArgumentList(String dissallowedArgs) {
-        
+    public void setArguments(List<String> newArgList) {
+        arguments = newArgList;
     }
     
     public String toString() {
