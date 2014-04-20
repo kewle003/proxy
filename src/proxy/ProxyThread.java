@@ -5,8 +5,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 public class ProxyThread extends Thread {
@@ -45,80 +43,83 @@ public class ProxyThread extends Thread {
     }
     
     /* This method is used to handle client requests */ 
-    public synchronized void run() { 
-        HashMap<String, List<String>> domainHash;
-        boolean isChunked = false;
-        
+    public synchronized void run() {         
         System.out.println("Thread "+ threadNum + " read at "+ clientSocket.getInetAddress());
         // read the request from the client 
         try {
-            //Get the input stream from the client
-            InputStream istream = clientSocket.getInputStream();
-            OutputStream ostream = clientSocket.getOutputStream();
+            if (!clientSocket.isClosed()) {
+                //Get the input stream from the client
+                InputStream istream = clientSocket.getInputStream();
+                OutputStream ostream = clientSocket.getOutputStream();
             
-            HTTPRequest httpReq = new HTTPRequest();
-            httpReq.parseRequest(istream);
+                HTTPRequest httpReq = new HTTPRequest();
+                httpReq.parseRequest(istream);
             
-            if (httpReq.getHost().length() != 0) {
-                serverSocket =  new Socket(httpReq.getHost(), httpReq.getPort());
-                rawOut = serverSocket.getOutputStream();
-                rawIn = serverSocket.getInputStream();
-            } else {
-                return;
-            }
-            
-            System.out.println("****DEBUG**** Server connected to Port:" +serverSocket.getPort()+ " InetAddr: " +serverSocket.getInetAddress());
-            
-            // check if the request is for one of the disallowed domains. 
-            // If the request is for a disallowed domain then inform the 
-            // client in a HTTP response. 
-            if (!httpReq.isAllowed(configFile)) {
-                ostream.write(getBlockedSiteScreen(httpReq.getRequestLine().getURI()));
-                clientSocket.close();
-                serverSocket.close();
-            }
-            // satisfy the request from the local cache if possible 
-            // if the request cannot be satisfied from the local cache 
-            // then form a valid HTTP request and send it to the server. 
-            String terminator = new String("Connection:close\n\n"); /* Prof said we should do this for this assignment */
-            rawOut.write(httpReq.getRequestData());
-            rawOut.write(terminator.getBytes());
-            // check the Content-Type: header field of the response. 
-            // if the type is not allowed then inform the client in a 
-            // HTTP response. 
-            HTTPResponse resp = new HTTPResponse();
-            resp.parseHeaders(httpReq.getRequestLine().getURI());
-            
-           
-            // Send the response to the client
-            if (httpReq.getDissAllowedArgs().size() > 0) {
-                if (validateResponse(httpReq.getValueOfRequestHeader("Content-Type"), httpReq.getDissAllowedArgs()))  {
-                    writeResponse(rawIn, ostream);
+                if (httpReq.getHost().length() != 0) {
+                    serverSocket =  new Socket(httpReq.getHost(), httpReq.getPort());
+                    rawOut = serverSocket.getOutputStream();
+                    rawIn = serverSocket.getInputStream();
                 } else {
-                    ostream.write(getErrorMessage());
+                    return;
                 }
-            } else {
-                writeResponse(rawIn, ostream);
-            }
+            
+                System.out.println("****DEBUG**** Server connected to Port:" +serverSocket.getPort()+ " InetAddr: " +serverSocket.getInetAddress());
+            
+                // check if the request is for one of the disallowed domains. 
+                // If the request is for a disallowed domain then inform the 
+                // client in a HTTP response. 
+                if (!httpReq.isAllowed(configFile)) {
+                    ostream.write(getBlockedSiteScreen(httpReq.getRequestLine().getURI()));
+                    clientSocket.close();
+                    serverSocket.close();
+                    return;
+                }
+                // satisfy the request from the local cache if possible 
+                // if the request cannot be satisfied from the local cache 
+                // then form a valid HTTP request and send it to the server. 
+                String terminator = new String("Connection:close\n\n"); /* Prof said we should do this for this assignment */
+                rawOut.write(httpReq.getRequestData());
+                rawOut.write(terminator.getBytes());
+                // check the Content-Type: header field of the response. 
+                // if the type is not allowed then inform the client in a 
+                // HTTP response. 
+                HTTPResponse resp = new HTTPResponse();
+                resp.parseHeaders(httpReq.getRequestLine().getURI());
+            
            
-            System.out.println ("Client exit.");
-            System.out.println ("---------------------------------------------------");
+                // Send the response to the client
+                if (httpReq.getDissAllowedArgs().size() > 0) {
+                    if (validateResponse(resp.getValueOfRequestHeader("Content-Type"), httpReq.getDissAllowedArgs()))  {
+                        writeResponse(rawIn, ostream);
+                    } else {
+                        System.out.println("Should write error message");
+                        ostream.write(getErrorMessage());
+                        serverSocket.close();
+                        clientSocket.close();
+                        return;
+                    }
+                } else {
+                    writeResponse(rawIn, ostream);
+                }
            
-            serverSocket.close();
-            clientSocket.close();
+                System.out.println ("Client exit.");
+                System.out.println ("---------------------------------------------------");
+           
+                serverSocket.close();
+                clientSocket.close();
             
-            // Cache the content locally for future use 
-            
-            
+                // Cache the content locally for future use 
+            }  
         } catch (IOException e) {
             e.printStackTrace();
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
             try {
-                clientSocket.close();
+                if (!clientSocket.isClosed())
+                    clientSocket.close();
                 if (serverSocket != null) {
-                    if (serverSocket.isConnected()) {
+                    if (!serverSocket.isClosed()) {
                         serverSocket.close();
                     }
                 }
@@ -129,6 +130,14 @@ public class ProxyThread extends Thread {
        
     } 
     
+    /**
+     * 
+     * This method simply writes the bytes from the
+     * Server's socket to the Client's socket.
+     * 
+     * @param istream
+     * @param ostream
+     */
     public synchronized void writeResponse(InputStream istream, OutputStream ostream) {
         //Client's ostream
         DataOutputStream out = new DataOutputStream(ostream);
@@ -141,6 +150,38 @@ public class ProxyThread extends Thread {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+    
+    /**
+     * 
+     * This method will check whether or not the MIME types are allowed
+     * in the Content-Type header from the HTTP response.
+     * 
+     * @param args
+     * @param dissAllowedArgs
+     * @return
+     */
+    public boolean validateResponse(List<String> args, List<String> dissAllowedArgs) {
+        String allImages = "image/*";
+        boolean blockAllImages = false;
+        if (dissAllowedArgs.contains(allImages)) {
+            blockAllImages = true;
+        }
+        if (args.size() > 0) {
+            for (String arg : args) {
+                if (blockAllImages) {
+                    if (arg.contains("image")) {
+                        System.out.println("************Disallowed Type: " +arg);
+                        return false;
+                    }
+                } else if (dissAllowedArgs.contains(arg)) {
+                    System.out.println("**************Disallowed Type: " +arg);
+                    return false;
+                }
+            }
+        }
+        System.out.println("################ALLOWED: " +args.toString());
+        return true;
     }
     
     public byte[] getBlockedSiteScreen(String uri) {
@@ -169,25 +210,6 @@ public class ProxyThread extends Thread {
         errScreen.append("\r\n\r\n");
         errScreen.append(data);
         return errScreen.toString().getBytes();
-    }
-    
-    public boolean validateResponse(List<String> args, List<String> dissAllowedArgs) {
-        String allImages = "image/*";
-        boolean blockAllImages = false;
-        if (dissAllowedArgs.contains(allImages)) {
-            blockAllImages = true;
-        }
-        for (String arg : args) {
-            if (blockAllImages) {
-                if (arg.contains("image")) {
-                    return false;
-                }
-            } else if (dissAllowedArgs.contains(arg)) {
-                return false;
-            }
-        }
-        
-        return true;
     }
     
     

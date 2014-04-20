@@ -55,10 +55,8 @@ public class ConfigFile {
                 }
                 StringTokenizer st = new StringTokenizer(currentLine);
                 
-                String temp = st.nextToken();
-                if (temp.startsWith("www") || temp.startsWith("http")) {
-                    domainName = temp;
-                }
+                domainName = st.nextToken();
+                //domainName.replace("www.", "");
                 
                 arguments = new ArrayList<String>();
                 

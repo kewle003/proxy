@@ -124,9 +124,8 @@ public class HTTPRequest {
      * @return - the argument list if found, else null
      */
     public List<String> getValueOfRequestHeader(String headerName) {
-        HTTPHeader headToCheck = new HTTPHeader(headerName);
         for (HTTPHeader header : headerList) {
-            if (headToCheck.equals(header)) {
+            if (header.getHeaderName().equals(headerName)) {
                 return header.getArguments();
             }
         }
@@ -134,12 +133,18 @@ public class HTTPRequest {
         return null;
     }
     
-    public List<String> getDissAllowedArgs() {
-        return dissAllowedArgs;
-    }
-    
+    /**
+     * 
+     * This method checks whether or not the HOST is an allowed
+     * domain for our Proxy. Furthermore, if it is an allowed domain,
+     * it builds the dissAllowed MIME types for that HOST.
+     * 
+     * @param configFile
+     * @return
+     */
     public boolean isAllowed(ConfigFile configFile) {
         HashMap<String, List<String>> domainHash = configFile.getDissallowedDomains();
+        //String hostToCheck = host.substring(5); /* Start without www */
         if (domainHash.containsKey(host)) {
             dissAllowedArgs = (ArrayList<String>) domainHash.get(host);
             if (dissAllowedArgs.size() == 0) {
@@ -151,6 +156,7 @@ public class HTTPRequest {
             }
         } 
         System.out.println("Domain allowed: " +host);
+        System.out.println("Arguments: " +dissAllowedArgs.toString());
         return true;
     }
     
@@ -164,6 +170,12 @@ public class HTTPRequest {
     public byte[] getRequestData() {
         return headerBuf.toString().getBytes();
     }
+    
+
+    public List<String> getDissAllowedArgs() {
+        return dissAllowedArgs;
+    }
+    
     
     public List<HTTPHeader> getHeaders() {
         return headerList;
