@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.util.HashMap;
 import java.util.List;
 
 public class ProxyThread extends Thread {
@@ -14,6 +15,7 @@ public class ProxyThread extends Thread {
     protected ConfigFile configFile;
     protected OutputStream rawOut;
     protected InputStream rawIn;
+    private HashMap<String, Cache> cache;
     
     private int BUF_SIZE = 8192;
     
@@ -36,10 +38,11 @@ public class ProxyThread extends Thread {
      * @param configFile
      * @param cm
      */
-    public ProxyThread(Socket clientSocket, ConfigFile configFile) {
+    public ProxyThread(Socket clientSocket, ConfigFile configFile, HashMap<String, Cache> cache) {
         super("ProxyThread");
         this.clientSocket= clientSocket;
         this.configFile = configFile;
+        this.cache = cache;
     }
     
     /* This method is used to handle client requests */ 

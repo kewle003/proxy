@@ -3,6 +3,7 @@ package proxy;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.HashMap;
 import java.util.logging.FileHandler;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
@@ -19,6 +20,8 @@ public class ProxyServer {
     
     // serverSock represents the Proxy�s connection with a HTTP server 
     Socket serverSock; 
+    
+    HashMap<String, Cache> cache = new HashMap<String, Cache>();
     
     // Constructor 
     public ProxyServer (String configfilePath, int portNo) {
@@ -55,7 +58,7 @@ public class ProxyServer {
         System.out.println("Server Details: " + proxySock.toString());
         while (true) { 
             try {
-                new ProxyThread(proxySock.accept(), cf).start();
+                new ProxyThread(proxySock.accept(), cf, cache).start();
             } catch (IOException e) {
                 e.printStackTrace();
             }
