@@ -99,7 +99,11 @@ public class HTTPHeader {
     }
     
     public String toString() {
-        StringBuilder s = new StringBuilder(headerName+": ");
+        StringBuilder s;
+        if (headerName != null)
+            s = new StringBuilder(headerName+": ");
+        else
+            s = new StringBuilder("");
         for (String args : arguments) {
             s.append(args + ",");
         }

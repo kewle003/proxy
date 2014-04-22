@@ -59,8 +59,8 @@ public class ProxyServer {
         }
 
         logger.info("Server UP");
-        System.out.println("Server Up");
-        System.out.println("Server Details: " + proxySock.toString());
+       // System.out.println("Server Up");
+        //System.out.println("Server Details: " + proxySock.toString());
         while (true) { 
             try {
                 new ProxyThread(proxySock.accept()).start();
@@ -88,11 +88,11 @@ public class ProxyServer {
             throw new IOException("Usage: ProxyServer [0-9999]");
         }
         
-        System.out.println("Working Directory = " +
-                CWD);
+        //System.out.println("Working Directory = " +
+          //      CWD);
         
         int portNo = Integer.parseInt(args[0]);
-        System.out.println("OS detected: " +OS);
+        //System.out.println("OS detected: " +OS);
 
         if (OS.indexOf("win") >= 0) {
             new ProxyServer(CWD + "\\src\\proxy\\config.txt", portNo);

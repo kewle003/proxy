@@ -67,10 +67,15 @@ public class ProxyThread extends Thread {
                 // satisfy the request from the local cache if possible 
                 // if the request cannot be satisfied from the local cache 
                 // then form a valid HTTP request and send it to the server. 
-                if (ProxyServer.getCache().containsKey(httpReq.getHost())) {
+               /* if (ProxyServer.getCache().containsKey(httpReq.getHost())) {
+                    System.out.println("*******************WRITING CACHE DATA**************");
+                    System.out.println("FOR: " +httpReq.getHost());
+                    //System.out.println(ProxyServer.getCache().get(httpReq.getHost()).getData()
                     ostream.write(ProxyServer.getCache().get(httpReq.getHost()).getData());
+                    clientSocket.close();
+                    serverSocket.close();
                     return;
-                }
+                }*/
                 String terminator = new String("Connection:close\n\n"); /* Prof said we should do this for this assignment */
                 rawOut.write(httpReq.getRequestData());
                 rawOut.write(terminator.getBytes());
@@ -105,16 +110,17 @@ public class ProxyThread extends Thread {
             
                 // Cache the content locally for future use 
                 if (httpResp.isCacheable()) {
-                    System.out.println("----------------CACHING ALLOWED------------");
+                    //System.out.println("----------------CACHING ALLOWED------------");
                     //Cache stuff
-                    System.out.println("Max-age=" + httpResp.getMaxAge());
-                    System.out.println("Max-stale=" +httpResp.getMaxStale());
-                    Cache c = new Cache((System.currentTimeMillis() + httpResp.getMaxAge()), (System.currentTimeMillis() + httpResp.getMaxStale()));
-                    c.writeData(httpReq.getRequestLine().getURI());
-                    ProxyServer.getCache().put(httpReq.getHost(), c);
-                    System.out.println(ProxyServer.getCache().get(httpReq.getHost()).getData().toString());
+                    if (ProxyServer.getCache().get(httpReq.getHost()).isExpired()) {
+                        System.out.println("Max-age=" + httpResp.getMaxAge());
+                        System.out.println("Max-stale=" +httpResp.getMaxStale());
+                        Cache c = new Cache((System.currentTimeMillis() + httpResp.getMaxAge()), (System.currentTimeMillis() + httpResp.getMaxStale()));
+                        c.writeData(httpResp.getResponseData());
+                        ProxyServer.getCache().put(httpReq.getHost(), c);
+                    }
                 } else {
-                    System.out.println("----------------CACHING NOT ALLOWED---------");
+                   // System.out.println("----------------CACHING NOT ALLOWED---------");
                 }
             }  
         } catch (IOException e) {

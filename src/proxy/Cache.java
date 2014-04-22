@@ -74,48 +74,9 @@ public class Cache {
      * 
      * @param uri
      */
-    public void writeData(String uri) {
-        if (!uri.startsWith("http:")) {
-            uri = "http://".concat(uri);
-        }
-        URL u;
-        InputStream istream = null;
-        try {
-            u = new URL(uri);
-            URLConnection conn = u.openConnection();
-            istream = conn.getInputStream();
-        } catch (MalformedURLException e1) {
-            e1.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        if (istream == null)
-            return;
-        
-        BufferedReader inLine = new BufferedReader(new InputStreamReader(istream));
-        ByteArrayOutputStream dataBuf = new ByteArrayOutputStream(BUF_SIZE);
-        PrintWriter dataWriter = new PrintWriter( dataBuf );
-        String response = new String("");
-        
-        try {
-            
-            response = inLine.readLine();
-            if (response != null) {
-                while ((response = inLine.readLine()) != null) {
-                    dataWriter.println(response);
-                    response = inLine.readLine();
-                }
-            }
-            
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        dataWriter.flush();
-        System.out.println("----------BEGIN CACHED VALUE---------");
-        System.out.println(dataBuf.toString());
-        System.out.println("----------END CACHED VALUE---------");
-        data = dataBuf.toString().getBytes();
-        
+    public void writeData(byte[] data) {
+        //this.data = new data[data.length];
+        this.data = data;  
     }
     
     /**

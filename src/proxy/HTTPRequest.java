@@ -101,15 +101,15 @@ public class HTTPRequest {
                 
             }
             headerWriter.flush();
-            /*System.out.println("******** Buffered Headers for debugging  **************");
-            for (HTTPHeader header : headerList) {
-                System.out.println(header.toString());
-            }
-            System.out.println("/r/n/r/n");
-            System.out.println("******** End of Buffered Headers for debugging  **************");
+            //System.out.println("******** Buffered Headers for debugging  **************");
+            //for (HTTPHeader header : headerList) {
+              //  System.out.println(header.toString());
+            //}
+            //System.out.println("/r/n/r/n");
+            //System.out.println("******** End of Buffered Headers for debugging  **************");
             System.out.println("******** WHAT THEY SHOULD BE ***************");
             System.out.println(headerBuf.toString());
-            System.out.println("********* END OF WHAT THEY SHOULD BE ******************");*/
+            System.out.println("********* END OF WHAT THEY SHOULD BE ******************");
         } else {
             //DO HEAD REQUEST
         }

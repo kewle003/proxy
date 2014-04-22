@@ -1,5 +1,10 @@
 package proxy;
 
+import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
@@ -19,6 +24,8 @@ import java.util.StringTokenizer;
 public class HTTPResponse {
     
     private List<HTTPHeader> headerList;
+    private ByteArrayOutputStream data;
+    private int BUF_SIZE = 8096;
     
     public HTTPResponse() {
         headerList = new ArrayList<HTTPHeader>();
@@ -39,9 +46,11 @@ public class HTTPResponse {
         }
         URL u = new URL(uri);
         URLConnection conn = u.openConnection();
+        data = new ByteArrayOutputStream(BUF_SIZE);
+        PrintWriter dataWriter = new PrintWriter(data);
            
         //get all headers
-        System.out.println("******** Recieved Headers for debugging  **************");
+       // System.out.println("******** Recieved Headers for debugging  **************");
         Map<String, List<String>> headerFields = conn.getHeaderFields();
    
         Set<String> headerFieldsSet = headerFields.keySet();
@@ -69,18 +78,35 @@ public class HTTPResponse {
                 arguments.add(result);
             }
             //System.out.println(headerFieldKey + "=" + sb.toString());
-            if (headerFieldKey != null) {
-                if (headerFieldKey.equals("Cache-Control")) {
-                    System.out.println(headerFieldKey + "=" + arguments.toString());
-                    if (arguments.contains("max-age=")) {
-                           
-                        System.out.println("NOOOOO CACCCHHHHHEE");
-                    }
-                }
-            }
+           // if (headerFieldKey != null) {
+            //    if (headerFieldKey.equals("Cache-Control")) {
+              //      System.out.println(headerFieldKey + "=" + arguments.toString());
+                //    if (arguments.contains("max-age=")) {
+                  //         
+                    //    System.out.println("NOOOOO CACCCHHHHHEE");
+                    //}
+                //}
+            //}
             headerList.add(new HTTPHeader(headerFieldKey, arguments)); 
         }
-        System.out.println("******** End of Recieved Headers for debugging  **************");
+        //System.out.println("******** End of Recieved Headers for debugging  **************");
+        
+        //Begin to store data
+        InputStream istream = conn.getInputStream();
+        BufferedReader inLine = new BufferedReader(new InputStreamReader(istream));
+        String responseLine = new String("");
+        
+        for (HTTPHeader header : headerList) {
+            dataWriter.print(header.toString());
+        }
+        
+        dataWriter.print("\r\n");
+        
+        while ((responseLine = inLine.readLine()) != null) {
+            dataWriter.println(responseLine);
+        }
+        dataWriter.flush();
+        //System.out.println(data.toString());
     }
     
     /**
@@ -97,8 +123,8 @@ public class HTTPResponse {
            // System.out.println("getValueOfReq --- " +headerName+ " ==   " +header.getHeaderName());
             if (header.getHeaderName() != null) {
                 if (header.getHeaderName().equals(headerName)) {
-                    System.out.println("getValueOfReq --- HeaderName: " +headerName);
-                    System.out.println("Values: " +header.getArguments());
+                    //System.out.println("getValueOfReq --- HeaderName: " +headerName);
+                    //System.out.println("Values: " +header.getArguments());
                     return header.getArguments();
                 }
             }
@@ -119,7 +145,7 @@ public class HTTPResponse {
             if (header.getHeaderName() != null) {
                 if (header.getHeaderName().equals("Cache-Control")) {
                     ArrayList<String> list = (ArrayList<String>) header.getArguments();
-                    System.out.println("Checking ARGUMENTS: " +list.toString());
+                   // System.out.println("Checking ARGUMENTS: " +list.toString());
                     if (list != null) {
                         if (list.contains("no-cache")) {
                             return false;
@@ -188,6 +214,10 @@ public class HTTPResponse {
     
     public List<HTTPHeader> getHeaders() {
         return headerList;
+    }
+    
+    public byte[] getResponseData() {
+        return data.toString().getBytes();
     }
 
 }
