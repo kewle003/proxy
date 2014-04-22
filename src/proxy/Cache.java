@@ -101,7 +101,7 @@ public class Cache {
             
             response = inLine.readLine();
             if (response != null) {
-                while (response.length() != 0) {
+                while ((response = inLine.readLine()) != null) {
                     dataWriter.println(response);
                     response = inLine.readLine();
                 }

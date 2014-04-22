@@ -67,6 +67,10 @@ public class ProxyThread extends Thread {
                 // satisfy the request from the local cache if possible 
                 // if the request cannot be satisfied from the local cache 
                 // then form a valid HTTP request and send it to the server. 
+                if (ProxyServer.getCache().containsKey(httpReq.getHost())) {
+                    ostream.write(ProxyServer.getCache().get(httpReq.getHost()).getData());
+                    return;
+                }
                 String terminator = new String("Connection:close\n\n"); /* Prof said we should do this for this assignment */
                 rawOut.write(httpReq.getRequestData());
                 rawOut.write(terminator.getBytes());
@@ -108,7 +112,7 @@ public class ProxyThread extends Thread {
                     Cache c = new Cache((System.currentTimeMillis() + httpResp.getMaxAge()), (System.currentTimeMillis() + httpResp.getMaxStale()));
                     c.writeData(httpReq.getRequestLine().getURI());
                     ProxyServer.getCache().put(httpReq.getHost(), c);
-                    System.out.println();
+                    System.out.println(ProxyServer.getCache().get(httpReq.getHost()).getData().toString());
                 } else {
                     System.out.println("----------------CACHING NOT ALLOWED---------");
                 }
@@ -154,6 +158,8 @@ public class ProxyThread extends Thread {
             e.printStackTrace();
         }
     }
+    
+    
     
     /**
      * 
