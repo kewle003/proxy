@@ -78,35 +78,28 @@ public class HTTPResponse {
                 arguments.add(result);
             }
             //System.out.println(headerFieldKey + "=" + sb.toString());
-           // if (headerFieldKey != null) {
-            //    if (headerFieldKey.equals("Cache-Control")) {
-              //      System.out.println(headerFieldKey + "=" + arguments.toString());
-                //    if (arguments.contains("max-age=")) {
-                  //         
-                    //    System.out.println("NOOOOO CACCCHHHHHEE");
-                    //}
-                //}
-            //}
             headerList.add(new HTTPHeader(headerFieldKey, arguments)); 
         }
         //System.out.println("******** End of Recieved Headers for debugging  **************");
         
         //Begin to store data
-        InputStream istream = conn.getInputStream();
-        BufferedReader inLine = new BufferedReader(new InputStreamReader(istream));
-        String responseLine = new String("");
+        if (isCacheable()) {
+            InputStream istream = conn.getInputStream();
+            BufferedReader inLine = new BufferedReader(new InputStreamReader(istream));
+            String responseLine = new String("");
         
-        for (HTTPHeader header : headerList) {
-            dataWriter.print(header.toString());
+            for (HTTPHeader header : headerList) {
+                dataWriter.print(header.toString());
+            }
+        
+            dataWriter.print("\r\n");
+        
+            while ((responseLine = inLine.readLine()) != null) {
+                dataWriter.println(responseLine);
+            }
+            dataWriter.flush();
+            //System.out.println(data.toString());*/
         }
-        
-        dataWriter.print("\r\n");
-        
-        while ((responseLine = inLine.readLine()) != null) {
-            dataWriter.println(responseLine);
-        }
-        dataWriter.flush();
-        //System.out.println(data.toString());
     }
     
     /**

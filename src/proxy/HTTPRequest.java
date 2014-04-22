@@ -101,12 +101,6 @@ public class HTTPRequest {
                 
             }
             headerWriter.flush();
-            //System.out.println("******** Buffered Headers for debugging  **************");
-            //for (HTTPHeader header : headerList) {
-              //  System.out.println(header.toString());
-            //}
-            //System.out.println("/r/n/r/n");
-            //System.out.println("******** End of Buffered Headers for debugging  **************");
             System.out.println("******** WHAT THEY SHOULD BE ***************");
             System.out.println(headerBuf.toString());
             System.out.println("********* END OF WHAT THEY SHOULD BE ******************");
@@ -148,15 +142,11 @@ public class HTTPRequest {
         if (domainHash.containsKey(host)) {
             dissAllowedArgs = (ArrayList<String>) domainHash.get(host);
             if (dissAllowedArgs.size() == 0) {
-                //System.out.println("Disallowed domain encounterd: " +host);
-               
                 return false;
             } else if (dissAllowedArgs.get(0).equals("*")) {
                 return false;
             }
         } 
-        //System.out.println("Domain allowed: " +host);
-        //System.out.println("Arguments: " +dissAllowedArgs.toString());
         return true;
     }
     

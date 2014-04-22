@@ -1,9 +1,11 @@
 package proxy;
 
+import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.URL;
 import java.util.HashMap;
@@ -16,6 +18,8 @@ public class ProxyThread extends Thread {
     protected ConfigFile configFile;
     protected OutputStream rawOut;
     protected InputStream rawIn;
+    
+    private ByteArrayOutputStream data;
     
     private int BUF_SIZE = 8192;
     
@@ -67,7 +71,7 @@ public class ProxyThread extends Thread {
                 // satisfy the request from the local cache if possible 
                 // if the request cannot be satisfied from the local cache 
                 // then form a valid HTTP request and send it to the server. 
-               /* if (ProxyServer.getCache().containsKey(httpReq.getHost())) {
+                if (ProxyServer.getCache().containsKey(httpReq.getHost())) {
                     System.out.println("*******************WRITING CACHE DATA**************");
                     System.out.println("FOR: " +httpReq.getHost());
                     //System.out.println(ProxyServer.getCache().get(httpReq.getHost()).getData()
@@ -75,7 +79,7 @@ public class ProxyThread extends Thread {
                     clientSocket.close();
                     serverSocket.close();
                     return;
-                }*/
+                }
                 String terminator = new String("Connection:close\n\n"); /* Prof said we should do this for this assignment */
                 rawOut.write(httpReq.getRequestData());
                 rawOut.write(terminator.getBytes());
@@ -116,8 +120,10 @@ public class ProxyThread extends Thread {
                         System.out.println("Max-age=" + httpResp.getMaxAge());
                         System.out.println("Max-stale=" +httpResp.getMaxStale());
                         Cache c = new Cache((System.currentTimeMillis() + httpResp.getMaxAge()), (System.currentTimeMillis() + httpResp.getMaxStale()));
-                        c.writeData(httpResp.getResponseData());
-                        ProxyServer.getCache().put(httpReq.getHost(), c);
+                        if (data != null) {
+                            c.writeData(data.toString().getBytes());
+                            ProxyServer.getCache().put(httpReq.getHost(), c);
+                        }
                     }
                 } else {
                    // System.out.println("----------------CACHING NOT ALLOWED---------");
@@ -153,16 +159,20 @@ public class ProxyThread extends Thread {
      */
     public synchronized void writeResponse(InputStream istream, OutputStream ostream) {
         //Client's ostream
+        data = new ByteArrayOutputStream(BUF_SIZE);
+        PrintWriter dataWriter = new PrintWriter(data);
         DataOutputStream out = new DataOutputStream(ostream);
         byte buffer[]  = new byte[BUF_SIZE]; 
         int count; 
          try {
             while ( (count = istream.read( buffer, 0, BUF_SIZE)) > -1)  {
-                  out.write(buffer, 0, count);  
+                  out.write(buffer, 0, count); 
+                  dataWriter.print(buffer);
              }
         } catch (IOException e) {
             e.printStackTrace();
         }
+        dataWriter.flush();
     }
     
     
