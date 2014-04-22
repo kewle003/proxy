@@ -7,6 +7,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.StringTokenizer;
 
 /**
  * This class will store all the header values for
@@ -35,44 +36,51 @@ public class HTTPResponse {
     public void parseHeaders(String uri) throws Exception {
         if (!uri.startsWith("http:")) {
             uri = "http://".concat(uri);
-        } else {
-           URL u = new URL(uri);
-           URLConnection conn = u.openConnection();
-           
-           //get all headers
-           System.out.println("******** Recieved Headers for debugging  **************");
-           Map<String, List<String>> headerFields = conn.getHeaderFields();
-   
-           Set<String> headerFieldsSet = headerFields.keySet();
-           Iterator<String> hearerFieldsIter = headerFieldsSet.iterator();
-
-           while (hearerFieldsIter.hasNext()) {
-               String headerFieldKey = hearerFieldsIter.next();
-               List<String> headerFieldValue = headerFields.get(headerFieldKey);
-               List<String> arguments = new ArrayList<String>();
-                        
-               StringBuilder sb = new StringBuilder();
-    
-               for (String value : headerFieldValue) {
-                   sb.append(value);
-                   sb.append("");
-                   arguments.add(value);
-               }
-               //System.out.println(headerFieldKey + "=" + sb.toString());
-               headerList.add(new HTTPHeader(headerFieldKey, arguments)); 
-           }
-           System.out.println("******** End of Recieved Headers for debugging  **************");
-           //System.out.println("******** BEGIN OF STORED HEADERS FOR DEBUG *******************");
-           //for (HTTPHeader header : headerList) {
-             //  System.out.print(header.getHeaderName()+ "= ");
-               //for (String args : header.getArguments()) {
-                 //  System.out.print(args+ ", ");
-              // }
-              // System.out.print("\n");
-          // }
-          // System.out.println("*********** END OF STORED HEADERS FOR DEBUG *******************");
         }
-        
+        URL u = new URL(uri);
+        URLConnection conn = u.openConnection();
+           
+        //get all headers
+        System.out.println("******** Recieved Headers for debugging  **************");
+        Map<String, List<String>> headerFields = conn.getHeaderFields();
+   
+        Set<String> headerFieldsSet = headerFields.keySet();
+        Iterator<String> hearerFieldsIter = headerFieldsSet.iterator();
+
+        while (hearerFieldsIter.hasNext()) {
+            String headerFieldKey = hearerFieldsIter.next();
+            List<String> headerFieldValue = headerFields.get(headerFieldKey);
+            List<String> arguments = new ArrayList<String>();
+                        
+            StringBuilder sb = new StringBuilder();
+    
+            for (String value : headerFieldValue) {
+                value.trim();
+                sb.append(value);
+                sb.append("");
+                //arguments.add(value);
+            }
+            StringTokenizer st = new StringTokenizer(sb.toString());
+            while (st.hasMoreElements()) {
+                String result = st.nextToken();
+                if (result.contains(","))
+                   result = result.substring(0, result.lastIndexOf(","));
+                result.trim();
+                arguments.add(result);
+            }
+            //System.out.println(headerFieldKey + "=" + sb.toString());
+            if (headerFieldKey != null) {
+                if (headerFieldKey.equals("Cache-Control")) {
+                    System.out.println(headerFieldKey + "=" + arguments.toString());
+                    if (arguments.contains("max-age=")) {
+                           
+                        System.out.println("NOOOOO CACCCHHHHHEE");
+                    }
+                }
+            }
+            headerList.add(new HTTPHeader(headerFieldKey, arguments)); 
+        }
+        System.out.println("******** End of Recieved Headers for debugging  **************");
     }
     
     /**
@@ -111,6 +119,7 @@ public class HTTPResponse {
             if (header.getHeaderName() != null) {
                 if (header.getHeaderName().equals("Cache-Control")) {
                     ArrayList<String> list = (ArrayList<String>) header.getArguments();
+                    System.out.println("Checking ARGUMENTS: " +list.toString());
                     if (list != null) {
                         if (list.contains("no-cache")) {
                             return false;
@@ -125,6 +134,56 @@ public class HTTPResponse {
         }
         
         return true;
+    }
+    
+    /**
+     * 
+     * This method will grab the value of max-age if
+     * it exists in milliseconds.
+     * 
+     * @return age in milliseconds if it exists, -1 if not.
+     */
+    public long getMaxAge() {
+        for (HTTPHeader header : headerList) {
+            if (header.getHeaderName() != null) {
+                if (header.getHeaderName().equals("Cache-Control")) {
+                    ArrayList<String> list = (ArrayList<String>) header.getArguments();
+                    if (list != null) {
+                        for (String element : list) {
+                            if (element.startsWith("max-age")) {
+                                return Integer.parseInt(element.substring(8))*1000;
+                                }
+                        }
+                    }
+                }
+            }
+        }
+        return -1;
+    }
+    
+    /**
+     * 
+     * This method will grab the value of max-stale
+     * if it exists in milliseconds.
+     * 
+     * @return age in milliseconds if it exists, -1 if not.
+     */
+    public long getMaxStale() {
+        for (HTTPHeader header : headerList) {
+            if (header.getHeaderName() != null) {
+                if (header.getHeaderName().equals("Cache-Control")) {
+                    ArrayList<String> list = (ArrayList<String>) header.getArguments();
+                    if (list != null) {
+                        for (String element : list) {
+                            if (element.startsWith("max-stale")) {
+                                return Integer.parseInt(element.substring(10))*1000;
+                                }
+                        }
+                    }
+                }
+            }
+        }
+        return -1;
     }
     
     public List<HTTPHeader> getHeaders() {

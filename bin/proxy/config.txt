@@ -40,4 +40,5 @@ www.cs.umn.edu  image/*
 www.google-analytics.com    image/gif
 
 www.umn.edu     image/*
-www1.umn.edu    image/*
+
+www1.umn.edu    image/jpeg

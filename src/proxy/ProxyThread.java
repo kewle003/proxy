@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.net.URL;
 import java.util.HashMap;
 import java.util.List;
 
@@ -15,7 +16,6 @@ public class ProxyThread extends Thread {
     protected ConfigFile configFile;
     protected OutputStream rawOut;
     protected InputStream rawIn;
-    private HashMap<String, Cache> cache;
     
     private int BUF_SIZE = 8192;
     
@@ -31,23 +31,10 @@ public class ProxyThread extends Thread {
         threadCount++;
     }
     
-    /**
-     * TODO:
-     * Once up and working, String config will be ConfigFile or something
-     * @param clientSocket
-     * @param configFile
-     * @param cm
-     */
-    public ProxyThread(Socket clientSocket, ConfigFile configFile, HashMap<String, Cache> cache) {
-        super("ProxyThread");
-        this.clientSocket= clientSocket;
-        this.configFile = configFile;
-        this.cache = cache;
-    }
     
     /* This method is used to handle client requests */ 
     public synchronized void run() {         
-        System.out.println("Thread "+ threadNum + " read at "+ clientSocket.getInetAddress());
+        //System.out.println("Thread "+ threadNum + " read at "+ clientSocket.getInetAddress());
         // read the request from the client 
         try {
             if (!clientSocket.isClosed()) {
@@ -66,12 +53,12 @@ public class ProxyThread extends Thread {
                     return;
                 }
             
-                System.out.println("****DEBUG**** Server connected to Port:" +serverSocket.getPort()+ " InetAddr: " +serverSocket.getInetAddress());
+               // System.out.println("****DEBUG**** Server connected to Port:" +serverSocket.getPort()+ " InetAddr: " +serverSocket.getInetAddress());
             
                 // check if the request is for one of the disallowed domains. 
                 // If the request is for a disallowed domain then inform the 
                 // client in a HTTP response. 
-                if (!httpReq.isAllowed(configFile)) {
+                if (!httpReq.isAllowed(ProxyServer.getConfigFile())) {
                     ostream.write(getBlockedSiteScreen(httpReq.getRequestLine().getURI()));
                     clientSocket.close();
                     serverSocket.close();
@@ -86,16 +73,17 @@ public class ProxyThread extends Thread {
                 // check the Content-Type: header field of the response. 
                 // if the type is not allowed then inform the client in a 
                 // HTTP response. 
-                HTTPResponse resp = new HTTPResponse();
-                resp.parseHeaders(httpReq.getRequestLine().getURI());
+                HTTPResponse httpResp = new HTTPResponse();
+                httpResp.parseHeaders(httpReq.getRequestLine().getURI());
             
            
                 // Send the response to the client
                 if (httpReq.getDissAllowedArgs().size() > 0) {
-                    if (validateResponse(resp.getValueOfRequestHeader("Content-Type"), httpReq.getDissAllowedArgs()))  {
-                        writeResponse(rawIn, ostream);
+                    if (validateResponse(httpResp.getValueOfRequestHeader("Content-Type"), httpReq.getDissAllowedArgs()))  {
+                        InputStream temp = rawIn;
+                        writeResponse(temp, ostream);
                     } else {
-                        System.out.println("Should write error message");
+                       // System.out.println("Should write error message");
                         ostream.write(getErrorMessage());
                         serverSocket.close();
                         clientSocket.close();
@@ -105,13 +93,25 @@ public class ProxyThread extends Thread {
                     writeResponse(rawIn, ostream);
                 }
            
-                System.out.println ("Client exit.");
-                System.out.println ("---------------------------------------------------");
+                //System.out.println ("Client exit.");
+                //System.out.println ("---------------------------------------------------");
            
                 serverSocket.close();
                 clientSocket.close();
             
                 // Cache the content locally for future use 
+                if (httpResp.isCacheable()) {
+                    System.out.println("----------------CACHING ALLOWED------------");
+                    //Cache stuff
+                    System.out.println("Max-age=" + httpResp.getMaxAge());
+                    System.out.println("Max-stale=" +httpResp.getMaxStale());
+                    Cache c = new Cache((System.currentTimeMillis() + httpResp.getMaxAge()), (System.currentTimeMillis() + httpResp.getMaxStale()));
+                    c.writeData(httpReq.getRequestLine().getURI());
+                    ProxyServer.getCache().put(httpReq.getHost(), c);
+                    System.out.println();
+                } else {
+                    System.out.println("----------------CACHING NOT ALLOWED---------");
+                }
             }  
         } catch (IOException e) {
             e.printStackTrace();
@@ -174,16 +174,16 @@ public class ProxyThread extends Thread {
             for (String arg : args) {
                 if (blockAllImages) {
                     if (arg.contains("image")) {
-                        System.out.println("************Disallowed Type: " +arg);
+                        //System.out.println("************Disallowed Type: " +arg);
                         return false;
                     }
                 } else if (dissAllowedArgs.contains(arg)) {
-                    System.out.println("**************Disallowed Type: " +arg);
+                    //System.out.println("**************Disallowed Type: " +arg);
                     return false;
                 }
             }
         }
-        System.out.println("################ALLOWED: " +args.toString());
+       // System.out.println("################ALLOWED: " +args.toString());
         return true;
     }
     

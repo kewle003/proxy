@@ -21,7 +21,11 @@ public class ProxyServer {
     // serverSock represents the Proxy�s connection with a HTTP server 
     Socket serverSock; 
     
-    HashMap<String, Cache> cache = new HashMap<String, Cache>();
+    // Cache
+    private static HashMap<String, Cache> cache = new HashMap<String, Cache>();
+    
+    // ConfigFile
+    private static ConfigFile configFile;
     
     // Constructor 
     public ProxyServer (String configfilePath, int portNo) {
@@ -29,6 +33,7 @@ public class ProxyServer {
         FileHandler fileHandler;
 
         try {
+            configFile =  new ConfigFile(configfilePath);
             // This block configure the logger with handler and formatter
             fileHandler = new FileHandler("LoggerFile");
             logger.addHandler(fileHandler);
@@ -58,13 +63,20 @@ public class ProxyServer {
         System.out.println("Server Details: " + proxySock.toString());
         while (true) { 
             try {
-                new ProxyThread(proxySock.accept(), cf, cache).start();
+                new ProxyThread(proxySock.accept()).start();
             } catch (IOException e) {
                 e.printStackTrace();
             }
         } // end of while 
     } 
     
+    protected static ConfigFile getConfigFile() {
+        return configFile;
+    }
+    
+    protected static HashMap<String, Cache> getCache() {
+        return cache;
+    }
     
     // main method 
     public static void main(String args[]) throws IOException { 

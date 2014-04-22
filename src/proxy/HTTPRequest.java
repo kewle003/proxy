@@ -148,15 +148,15 @@ public class HTTPRequest {
         if (domainHash.containsKey(host)) {
             dissAllowedArgs = (ArrayList<String>) domainHash.get(host);
             if (dissAllowedArgs.size() == 0) {
-                System.out.println("Disallowed domain encounterd: " +host);
+                //System.out.println("Disallowed domain encounterd: " +host);
                
                 return false;
             } else if (dissAllowedArgs.get(0).equals("*")) {
                 return false;
             }
         } 
-        System.out.println("Domain allowed: " +host);
-        System.out.println("Arguments: " +dissAllowedArgs.toString());
+        //System.out.println("Domain allowed: " +host);
+        //System.out.println("Arguments: " +dissAllowedArgs.toString());
         return true;
     }
     
