@@ -1,16 +1,18 @@
 package proxy;
 
-import java.io.BufferedReader;
+
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLConnection;
-import java.util.Date;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 
 /**
  * 
@@ -23,13 +25,16 @@ import java.util.Date;
  */
 public class Cache {
     
-    //The html data
-    private byte[] data;
+    
     //The expiration date
     private long maxAge;
     private long maxStale;
     
+    private String fileName;
+    
     private int BUF_SIZE = 8096;
+    
+    private String hostName;
     
     /**
      * 
@@ -38,14 +43,13 @@ public class Cache {
      * @param data
      * @param date
      */
-    public Cache(long maxAge, long maxStale) {
+    public Cache(long maxAge, long maxStale, String fileName, String hostName) {
         this.maxAge = maxAge;
         this.maxStale = maxStale;
-    }
-    
-    
-    public void setData(byte[] newData) {
-        data = newData;
+        this.fileName = fileName.substring(4, hostName.length() - 4);
+        //StringBuilder sb = new StringBuilder("");
+        
+        this.hostName = hostName;
     }
     
     public void setMaxAge(long newMaxAge) {
@@ -56,9 +60,6 @@ public class Cache {
         maxStale = newMaxStale;
     }
     
-    public byte[] getData() {
-        return data;
-    }
     
     public long getMaxAge() {
         return maxAge;
@@ -68,16 +69,52 @@ public class Cache {
         return maxStale;
     }
     
+    public String getFilePath() {
+        return fileName;
+    }
+    
     /**
      * 
      * TODO: Store Headers
+     * @param map 
      * 
      * @param uri
      */
-    public void writeData(byte[] data) {
-        //this.data = new data[data.length];
-        this.data = data;  
+    public void writeData(InputStream istream, List<HTTPHeader> headerList) {
+      
+        byte buffer[]  = new byte[BUF_SIZE]; 
+        int count; 
+        FileOutputStream file = null;
+        //ByteArrayInputStream in = new ByteArrayInputStream(ostream.toByteArray());
+     
+         try {
+            file = new FileOutputStream(fileName);
+
+           /* for (HTTPHeader header : headerList) {
+                file.write(header.toString().getBytes());
+            }
+            
+            file.write("\n\n".getBytes());*/
+            while ( (count = istream.read(buffer, 0, BUF_SIZE)) > -1) {
+                file.write(buffer, 0, count);
+            }
+            file.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            if (file != null) {
+                try {
+                    file.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+  
     }
+    
     
     /**
      * 

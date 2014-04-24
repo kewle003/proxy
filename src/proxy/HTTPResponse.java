@@ -46,8 +46,6 @@ public class HTTPResponse {
         }
         URL u = new URL(uri);
         URLConnection conn = u.openConnection();
-        data = new ByteArrayOutputStream(BUF_SIZE);
-        PrintWriter dataWriter = new PrintWriter(data);
            
         //get all headers
        // System.out.println("******** Recieved Headers for debugging  **************");
@@ -82,24 +80,6 @@ public class HTTPResponse {
         }
         //System.out.println("******** End of Recieved Headers for debugging  **************");
         
-        //Begin to store data
-        if (isCacheable()) {
-            InputStream istream = conn.getInputStream();
-            BufferedReader inLine = new BufferedReader(new InputStreamReader(istream));
-            String responseLine = new String("");
-        
-            for (HTTPHeader header : headerList) {
-                dataWriter.print(header.toString());
-            }
-        
-            dataWriter.print("\r\n");
-        
-            while ((responseLine = inLine.readLine()) != null) {
-                dataWriter.println(responseLine);
-            }
-            dataWriter.flush();
-            //System.out.println(data.toString());*/
-        }
     }
     
     /**

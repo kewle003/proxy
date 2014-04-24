@@ -105,7 +105,7 @@ public class HTTPHeader {
         else
             s = new StringBuilder("");
         for (String args : arguments) {
-            s.append(args + ",");
+          s.append(args + ",");
         }
         //Remove last , on arg list
         s.deleteCharAt(s.lastIndexOf(","));
