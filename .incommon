@@ -1,0 +1,10 @@
+HTTP/1.1 200 OK
+Date: Thu, 24 Apr 2014 23:31:01 GMT
+Server: Apache/2.2.22 (Debian)
+X-OCSP-Reponder-ID: t8edcaocsp6
+Content-Length: 5
+Connection: close
+Content-Type: application/ocsp-response
+
+0
+

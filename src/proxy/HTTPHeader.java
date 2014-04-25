@@ -58,9 +58,6 @@ public class HTTPHeader {
         StringTokenizer st = new StringTokenizer(parseLine, ": ");
         
         headerName = st.nextToken();
-        if (headerName.equals("Date")) {
-            
-        }
         
         //Get the argument list
         while (st.hasMoreElements()) {
@@ -102,13 +99,25 @@ public class HTTPHeader {
         StringBuilder s;
         if (headerName != null)
             s = new StringBuilder(headerName+": ");
-        else
+        else {
             s = new StringBuilder("");
-        for (String args : arguments) {
-          s.append(args + ",");
+            for (String args : arguments) {
+                s.append(args + " ");
+            }
         }
+        if (headerName != null) {
+            if (headerName.equalsIgnoreCase("Content-Type")) {
+                s.append("text/xml; charset=utf-8");
+            } else {
+                for (String args : arguments) {
+                    s.append(args + ",");
+                }  
+            }
+        }
+        
         //Remove last , on arg list
-        s.deleteCharAt(s.lastIndexOf(","));
+        if (s.lastIndexOf(",") > 0)
+            s.deleteCharAt(s.lastIndexOf(","));
         //Append the CRF
         s.append("\r\n");
         return s.toString();

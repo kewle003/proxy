@@ -8,6 +8,8 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -76,28 +78,39 @@ public class Cache {
     /**
      * 
      * TODO: Store Headers
+     * @param dataTest 
      * @param map 
      * 
      * @param uri
      */
-    public void writeData(InputStream istream, List<HTTPHeader> headerList) {
+   // public void writeData(byte[] data) {
+    public void writeData(InputStream istream, List<HTTPHeader> headerList, ByteArrayOutputStream dataTest) {
       
         byte buffer[]  = new byte[BUF_SIZE]; 
         int count; 
         FileOutputStream file = null;
         //ByteArrayInputStream in = new ByteArrayInputStream(ostream.toByteArray());
-     
+        
+        
          try {
             file = new FileOutputStream(fileName);
-
-           /* for (HTTPHeader header : headerList) {
-                file.write(header.toString().getBytes());
-            }
+          
+           // for (HTTPHeader header : headerList) {
+             //   if (header.getHeaderName() == null)
+                    //file.write(header.toString().getBytes());
+               //     continue;
+                //else if (header.getHeaderName().equals("Content-Type"))
+                  //  file.write(header.toString().getBytes());
+                //else if (header.getHeaderName().equals("Content-Length"))
+                  //  file.write(header.toString().getBytes());
+            //}
             
-            file.write("\n\n".getBytes());*/
+            //file.write("\n".getBytes());
+            //file.write("Content-Type: text/html; charset=utf-8\n\n".getBytes());
             while ( (count = istream.read(buffer, 0, BUF_SIZE)) > -1) {
                 file.write(buffer, 0, count);
             }
+            //file.write(dataTest.toString().getBytes());
             file.close();
         } catch (IOException e) {
             e.printStackTrace();

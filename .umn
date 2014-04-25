@@ -1,3 +1,14 @@
+HTTP/1.1 304 Not Modified
+Date: Fri, 25 Apr 2014 01:20:31 GMT
+Server: Apache/1.3.37 (Unix) mod_ssl/2.8.28 OpenSSL/0.9.8d PHP/4.4.2
+Connection: close
+Expires: Fri, 25 Apr 2014 01:20:31 GMT
+Cache-Control: public, max-age=0
+
+ding: chunked
+Content-Type: text/html; charset=utf-8
+
+e2f
 <!doctype html>
 <!--[if lt IE 7 ]> <html lang="en" class="no-js ie6"> <![endif]-->
 <!--[if IE 7 ]>    <html lang="en" class="no-js ie7"> <![endif]-->
@@ -68,7 +79,9 @@
 	}
 	function linkClickSpotlight(link) {
   		try {
-    		_gaq.push(['_trackEvent', 'Homesite Outbound Links' ,  link.href ,  'Spotlights' ]);
+    		_gaq.push(['_trackEvent', 'Home
+14f
+site Outbound Links' ,  link.href ,  'Spotlights' ]);
     		setTimeout('document.location = "' + link.href + '"', 100)
   		}catch(err){}
 	}
@@ -81,7 +94,9 @@
 <body>
 <h1 class="visuallyhidden">University of Minnesota</h1>
 <div class="visuallyhidden" itemscope itemtype="http://data-vocabulary.org/Organization"> 
-    <span itemprop="name">University of Minnesota</span>
+    
+eb4
+<span itemprop="name">University of Minnesota</span>
     <span itemprop="address" itemscope 
       itemtype="http://data-vocabulary.org/Address">
       <span itemprop="street-address">100 Church St SE Suite #3</span>, 
@@ -152,12 +167,16 @@
 			 <li><a href="http://www.academic.umn.edu/equity/" onClick="linkClick(this);return false;">Equity &amp; Diversity</a></li>
 			 <li><a href="http://giving.umn.edu/give.html" onClick="linkClick(this);return false;">Giving to the U</a></li>
 			 <li><a href="http://www1.umn.edu/news/" onClick="linkClick(this);return false;">News</a></li>
-			 <li><a href="http://www1.umn.edu/twincities/campuses/index.html" onClick="linkClick(this);return false;">Our Campuses</a></li>
+			 <li><a href="http://www1.umn.edu/twincities/campuses/index.html" onClick="l
+153
+inkClick(this);return false;">Our Campuses</a></li>
 			 <li><a href="http://safe-u.umn.edu/" onClick="linkClick(this);return false;">SafeU</a></li>
 	</ul>
 	
 		</li>
-			<li class="cn-top n2 expected-lines-2 cn-no-audience"><a href="http://www1.umn.edu/twincities/academics-research/index.html" class="cn-top">Academics and Research</a><span class="caret"></span>
+			<li class="cn-top n2 expected-lines-2 cn-no-audience"><a href="http://www1.umn.edu/twincities/academics-research/index.html" class="cn-top">Academics and Research</a>
+ff4
+<span class="caret"></span>
 				<ul class="cn-core">
 			 <li><a href="http://onestop.umn.edu/calendars/index.html" onClick="linkClick(this);return false;">Academic Calendar</a></li>
 			 <li><a href="http://www.bookstore.umn.edu/" onClick="linkClick(this);return false;">Bookstores</a></li>
@@ -195,11 +214,15 @@
 	</ul>
 	
 		</li>
-			<li class="cn-top n4 expected-lines-2 cn-no-audience"><a href="http://www.health.umn.edu" onClick="linkClick(this);return false;" class="cn-top">Health and Medicine</a><span class="caret"></span>
+			<li class="cn-top n4 expected-lines-2 cn-no-audience"><a href="http://www.health.umn.edu" onClick="linkClick(this);return false;" class="cn-top">Health and Medicine</a><s
+19c
+pan class="caret"></span>
 				<ul class="cn-core">
 			 <li><a href="http://www.uofmchildrenshospital.org/" onClick="linkClick(this);return false;">Amplatz Children's Hospital</a></li>
 			 <li><a href="http://www.biomed.lib.umn.edu/" onClick="linkClick(this);return false;">Bio-Medical Library</a></li>
-			 <li><a href="http://www.bdd.umn.edu/" onClick="linkClick(this);return false;">BioMedical Discovery District</a></li>
+			 <li><a href="http://www.bdd.umn.edu/" onClick="linkClick(this);return false;">BioMedical Discovery Dis
+f16
+trict</a></li>
 			 <li><a href="http://www.bhs.umn.edu/" onClick="linkClick(this);return false;">Boynton Health Service</a></li>
 			 <li><a href="http://www.give.umn.edu" onClick="linkClick(this);return false;">Giving to Medicine &amp; Health</a></li>
 			 <li><a href="http://www1.umn.edu/twincities/health-medicine/index.html#wellness" onClick="linkClick(this);return false;">Health, Wellness &amp; Spirituality</a></li>
@@ -238,7 +261,9 @@
 			 <li><a href="http://recwell.umn.edu/facilities/" onClick="linkClick(this);return false;">Facilities</a></li>
 			 <li><a href="http://recwell.umn.edu/fitness/" onClick="linkClick(this);return false;">Fitness Programs</a></li>
 			 <li><a href="http://recwell.umn.edu/intramurals/" onClick="linkClick(this);return false;">Intramural Sports</a></li>
-			 <li><a href="http://recwell.umn.edu/outdoor/" onClick="linkClick(this);return false;">Outdoor Recreation</a></li>
+			 <li><a href="http://recwe
+1a0
+ll.umn.edu/outdoor/" onClick="linkClick(this);return false;">Outdoor Recreation</a></li>
 			 <li><a href="http://recwell.umn.edu/sportclubs/" onClick="linkClick(this);return false;">Sport Clubs</a></li>
 			 <li><a href="http://recwell.umn.edu/youth/" onClick="linkClick(this);return false;">Youth Programs</a></li>
 	</ul>
@@ -247,7 +272,9 @@
 	</ul>
 </nav>
 	<div id="view-bar">
-		<form id="aswitch" name="aswitch" method="post" action="/twincities/index.html">
+		<form id="aswitch" name="aswitch" meth
+e7b
+od="post" action="/twincities/index.html">
 			<h2>Change my view</h2>
 			<fieldset>
 				<!--<legend class="way-off">Change my view</legend>-->
@@ -300,13 +327,17 @@
                 <p class="learn-more-link"><a href="http://discover.umn.edu/news/science-technology/physics-nanotech-building-opens" onClick="linkClick(this);return false;" title="See story">See story&nbsp;&gt;</a></p>
             </div>
         
-            <img height="348" width="720" alt="Physics and Nanotechnology building open" src="../prod/groups/ur/@pub/@ur/@news/documents/multimedia/ur_multimedia_477379.jpg">
+            <img height="348" width="72
+196
+0" alt="Physics and Nanotechnology building open" src="../prod/groups/ur/@pub/@ur/@news/documents/multimedia/ur_multimedia_477379.jpg">
         </article>
 	 
         <article class="feature feature-big-image is-hidden">
             <div>
                 <h3>Cultivating student entrepreneurs</h3>
-                <p>A U of M program that takes the mystery out of commercializing technology has helped Ph.D. student Shawn Wilhelm design a new, highly efficient hydraulic pump with serious market potential.</p>
+                <p>A U of M program that takes the mystery out of commercializing technology has helped
+ff4
+ Ph.D. student Shawn Wilhelm design a new, highly efficient hydraulic pump with serious market potential.</p>
                 <p class="learn-more-link"><a href="http://businessumn.com/2014/04/09/u-students-become-entrepreneurs-through-min-corps-startup" onClick="linkClick(this);return false;" title="See story">See story&nbsp;&gt;</a></p>
             </div>
         
@@ -369,7 +400,11 @@
 <h3><a href="https://events.umn.edu/" onClick="linkClickSpotlight(this);return false;" title="Events Calendar">Featured Events</a></h3>
 <ul>
 
-<li><span class="event-title"><a href="https://events.umn.edu/034505" onClick="linkClickSpotlight(this);return false;">IMA Public Lecture: Mathematics in Modern Architecture</a></span>
+<li><s
+b4
+pan class="event-title"><a href="https://events.umn.edu/034505" onClick="linkClickSpotlight(this);return false;">IMA Public Lecture: Mathematics in Modern Architecture</a></span>
+
+fad
 <span class="event-date"><a href="https://events.umn.edu/034505" onClick="linkClickSpotlight(this);return false;">Apr 29</a></span>
  </li>
 
@@ -395,7 +430,7 @@
 			
 <section >
 	
-<h3><a href="http://www1.umn.edu/news/" onClick="linkClickSpotlight(this);return false;">News</a></h3><ul class="link-list"><li><a href="http://discover.umn.edu/news/science-technology/media-advisory-interactive-science-exhibits-and-shows-draw-2000-middle">Media advisory: Interactive science exhibits and shows to draw 2,000 middle school students to U of M campus</a></li><li><a href="http://discover.umn.edu/news/arts-humanities/department-art-celebrates-45th-iron-pour-organizers-retirement">Department of Art celebrates 45th Iron Pour, organizer's retirement</a></li><li><a href="http://discover.umn.edu/news/vision-leadership/president-kaler-elected-american-academy-arts-and-science">President Kaler elected to American Academy of Arts and Science</a></li></ul><p class="read-more"><a href="http://discover.umn.edu/" onClick="linkClickSpotlight(this);return false;">More news</a>&nbsp;&gt;</p>
+<h3><a href="http://www1.umn.edu/news/" onClick="linkClickSpotlight(this);return false;">News</a></h3><ul class="link-list"><li><a href="http://discover.umn.edu/news/campus-community/upcoming-events-u-m-campus-13">Upcoming events on the U of M campus</a></li><li><a href="http://discover.umn.edu/news/science-technology/media-advisory-interactive-science-exhibits-and-shows-draw-2000-middle">Media advisory: Interactive science exhibits and shows to draw 2,000 middle school students to U of M campus</a></li><li><a href="http://discover.umn.edu/news/arts-humanities/department-art-celebrates-45th-iron-pour-organizers-retirement">Department of Art celebrates 45th Iron Pour, organizer's retirement</a></li></ul><p class="read-more"><a href="http://discover.umn.edu/" onClick="linkClickSpotlight(this);return false;">More news</a>&nbsp;&gt;</p>
 </section>
 			
 <section  class="graphic-spotlight last-spotlight">
@@ -414,8 +449,12 @@
         <ul id="social-media" style="float:left;">
             <li id="facebook"><a href="https://www.facebook.com/UofMN" onClick="linkClick(this);return false;"><span class="visuallyhidden">University of Minnesota on Facebook</span></a></li>
             <li id="twitter"><a href="http://twitter.com/#!/UMNews" onClick="linkClick(this);return false;"><span class="visuallyhidden">University of Minnesota (UMNews) on Twitter</span></a></li>
-            <li id="youtube"><a href="http://www.youtube.com/user/UniversityofMinn" onClick="linkClick(this);return false;"><span class="visuallyhidden">University of Minnesota on YouTube</span></a></li>
-            <li id="instagram"><a href="http://instagram.com/umnpics" onClick="linkClick(this);return false;"><span class="visuallyhidden">University of Minnesota (umnpics) on Instagram</span></a></li>
+            <li id="youtube"><a href="http://www.youtube.com/user/UniversityofMinn" onClick="linkClick(this);return false;"><s
+bd
+pan class="visuallyhidden">University of Minnesota on YouTube</span></a></li>
+            <li id="instagram"><a href="http://instagram.com/umnpics" onClick="linkClick(this);return false;">
+652
+<span class="visuallyhidden">University of Minnesota (umnpics) on Instagram</span></a></li>
             <li id="pinterest"><a href="http://pinterest.com/umnpins/" onClick="linkClick(this);return false;"><span class="visuallyhidden">University of Minnesota (umnpins) on Pinterest</span></a></li>
         </ul>
 	</div>
@@ -450,3 +489,6 @@
 
 </body>
 </html>
+
+0
+
