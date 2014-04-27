@@ -29,9 +29,16 @@ public class ProxyServer {
     private static ConfigFile configFile;
     
     // Constructor 
-    public ProxyServer (String configfilePath, int portNo) {
+    public ProxyServer (String configfilePath, int portNo, final File f) {
 
         FileHandler fileHandler;
+        Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+
+            public void run() {
+                System.out.println("Deleting");
+                f.delete();
+            }
+        }));
 
         try {
             configFile =  new ConfigFile(configfilePath);
@@ -86,7 +93,7 @@ public class ProxyServer {
         
         int portNo = Integer.parseInt(args[0]);
         //System.out.println("OS detected: " +OS);
-        File f = new File(CWD + "/ProxyServerCache");
+        final File f = new File(CWD + "/ProxyServerCache");
         if (!f.exists()) {
             System.out.println("Making directory");
             f.mkdir();
@@ -94,15 +101,16 @@ public class ProxyServer {
             System.out.println(f.toString());
         }
         
-        f.deleteOnExit();
+        
         
         if (OS.indexOf("win") >= 0) {
-            new ProxyServer(CWD + "\\src\\proxy\\config.txt", portNo);
+            new ProxyServer(CWD + "\\src\\proxy\\config.txt", portNo, f);
         } else {
-            new ProxyServer(CWD + "/src/proxy/config.txt", portNo);
+            new ProxyServer(CWD + "/src/proxy/config.txt", portNo, f);
         } 
         
         
     } 
 
+   
 }
