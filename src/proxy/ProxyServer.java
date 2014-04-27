@@ -1,4 +1,4 @@
-package proxyTest;
+package proxy;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -87,9 +87,9 @@ public class ProxyServer {
         //System.out.println("OS detected: " +OS);
 
         if (OS.indexOf("win") >= 0) {
-            new ProxyServer(CWD + "\\src\\proxyTest\\config.txt", portNo);
+            new ProxyServer(CWD + "\\src\\proxy\\config.txt", portNo);
         } else {
-            new ProxyServer(CWD + "/src/proxyTest/config.txt", portNo);
+            new ProxyServer(CWD + "/src/proxy/config.txt", portNo);
         } 
     } 
 

@@ -1,4 +1,4 @@
-package proxyTest;
+package proxy;
 
 import java.io.ByteArrayInputStream;
 import java.io.DataOutputStream;
