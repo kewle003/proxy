@@ -1,21 +1,17 @@
-package proxy;
+package proxyTest;
 
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
+import java.io.ByteArrayInputStream;
 import java.io.DataOutputStream;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.net.HttpURLConnection;
 import java.net.Socket;
 import java.net.URL;
-import java.net.URLConnection;
-import java.util.HashMap;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class ProxyThread extends Thread {
     
@@ -26,164 +22,94 @@ public class ProxyThread extends Thread {
     protected OutputStream rawOut;
     protected InputStream rawIn;
     
-    private ByteArrayOutputStream dataTest;
-    
+
     private int BUF_SIZE = 8192;
+   
+    public static int THREAD_COUNT = 0;
     
     private String host;
     
-   // protected String config;
-    private int threadNum;
     
     
-    private static int threadCount = 0;
-    
+
     public ProxyThread(Socket clientSocket) {
         super("ProxyThread");
         this.clientSocket = clientSocket;
-        this.threadNum = threadCount;
-        threadCount++;
+        THREAD_COUNT++;
+
     }
     
-    
-    /* This method is used to handle client requests */ 
-    public synchronized void run() {         
-        //System.out.println("Thread "+ threadNum + " read at "+ clientSocket.getInetAddress());
-        // read the request from the client 
-        try {
-            if (!clientSocket.isClosed()) {
-                //Get the input stream from the client
-                InputStream istream = clientSocket.getInputStream();
-                OutputStream ostream = clientSocket.getOutputStream();
-            
-                HTTPRequest httpReq = new HTTPRequest();
-                httpReq.parseRequest(istream);
-                
-                if (httpReq.getHost().length() != 0) {
-                    serverSocket =  new Socket(httpReq.getHost(), httpReq.getPort());
-                    rawOut = serverSocket.getOutputStream();
-                    rawIn = serverSocket.getInputStream();
-                    host = httpReq.getHost();
-                } else {
-                    return;
-                }
-            
-               // System.out.println("****DEBUG**** Server connected to Port:" +serverSocket.getPort()+ " InetAddr: " +serverSocket.getInetAddress());
-            
-                // check if the request is for one of the disallowed domains. 
-                // If the request is for a disallowed domain then inform the 
-                // client in a HTTP response. 
-                if (!httpReq.isAllowed(ProxyServer.getConfigFile())) {
-                    ostream.write(getBlockedSiteScreen(httpReq.getRequestLine().getURI()));
-                    clientSocket.close();
-                    serverSocket.close();
-                    return;
-                }
-                // satisfy the request from the local cache if possible 
-                // if the request cannot be satisfied from the local cache 
-                // then form a valid HTTP request and send it to the server. 
-                if (ProxyServer.getCache().containsKey(httpReq.getHost())) {
-                    System.out.println("*******************WRITING CACHE DATA**************");
-                    System.out.println("FOR: " +httpReq.getHost());
-                    //System.out.println(ProxyServer.getCache().get(httpReq.getHost()).getData()
-                    writeCachedResponse(ostream, ProxyServer.getCache().get(host).getFilePath());
-                    clientSocket.close();
-                    serverSocket.close();
-                    return;
-                }
-                String terminator = new String("Connection:close\n\n"); /* Prof said we should do this for this assignment */
-                rawOut.write(httpReq.getRequestData());
-                rawOut.write(terminator.getBytes());
-                // check the Content-Type: header field of the response. 
-                // if the type is not allowed then inform the client in a 
-                // HTTP response. 
-                HTTPResponse httpResp = new HTTPResponse();
-                httpResp.parseHeaders(httpReq.getRequestLine().getURI());
-            
-           
-                // Send the response to the client
-                if (httpReq.getDissAllowedArgs().size() > 0) {
-                    if (validateResponse(httpResp.getValueOfRequestHeader("Content-Type"), httpReq.getDissAllowedArgs()))  {
-                        InputStream temp = rawIn;
-                        writeResponse(temp, ostream, host);
-                    } else {
-                       // System.out.println("Should write error message");
-                        ostream.write(getErrorMessage());
-                        serverSocket.close();
-                        clientSocket.close();
-                        return;
-                    }
-                } else {
-                    writeResponse(rawIn, ostream, host);
-                }
-           
-                //System.out.println ("Client exit.");
-                //System.out.println ("---------------------------------------------------");
-           
-                serverSocket.close();
-                clientSocket.close();
-            
-                // Cache the content locally for future use 
-                if (httpResp.isCacheable()) {
-                    //System.out.println("----------------CACHING ALLOWED------------");
-                    //Cache stuff
-                    if (ProxyServer.getCache().containsKey(host)) {
-                        if (ProxyServer.getCache().get(httpReq.getHost()).isExpired()) {
-                            System.out.println("--------CACHE EXPIRED FOR " +host+ " --------------");
-                            cacheServerSocket =  new Socket(httpReq.getHost(), httpReq.getPort());
-                            OutputStream cacheOut = cacheServerSocket.getOutputStream();
-                            InputStream cacheIn = cacheServerSocket.getInputStream();
-                            cacheOut.write(httpReq.getRequestData());
-                            cacheOut.write(terminator.getBytes());
-                            System.out.println("Max-age=" + httpResp.getMaxAge());
-                            System.out.println("Max-stale=" +httpResp.getMaxStale());
-                            Cache c = new Cache((System.currentTimeMillis() + httpResp.getMaxAge()), (System.currentTimeMillis() + httpResp.getMaxStale()), host, host);
-                            
-                            //URL url = new URL("http://".concat(host));
-                            //URLConnection conn = (URLConnection) url.openConnection();
-                            c.writeData(cacheIn, httpResp.getHeaders(), dataTest);
-                           // c.writeData(data.toByteArray());
-                            ProxyServer.getCache().put(host, c);
-                            cacheServerSocket.close();
-                        } 
-                    } else {
-                        System.out.println("--------CACHE NEW FOR " +host+ " --------------");
-                        cacheServerSocket =  new Socket(httpReq.getHost(), httpReq.getPort());
-                        OutputStream cacheOut = cacheServerSocket.getOutputStream();
-                        InputStream cacheIn = cacheServerSocket.getInputStream();
-                        cacheOut.write(httpReq.getRequestData());
-                        cacheOut.write(terminator.getBytes());
-                        Cache c = new Cache((System.currentTimeMillis() + httpResp.getMaxAge()), (System.currentTimeMillis() + httpResp.getMaxStale()), host, host);
-                        //URL url = new URL("http://".concat(host));
-                        //URLConnection conn = (URLConnection) url.openConnection();
-                        c.writeData(cacheIn, httpResp.getHeaders(), dataTest);
-                       // c.writeData(data.toByteArray());
-                        ProxyServer.getCache().put(host, c);
-                        cacheServerSocket.close();
-                    }
-                } else {
-                    System.out.println("----------------CACHING NOT ALLOWED FOR" +host+ "---------");
-                }
-            }  
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            try {
-                if (!clientSocket.isClosed())
-                    clientSocket.close();
-                if (serverSocket != null) {
-                    if (!serverSocket.isClosed()) {
-                        serverSocket.close();
-                    }
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
+    /**
+     * 
+     * This method will handle requests
+     * from a client.
+     * 
+     */
+    public synchronized void run() {  
+       if (clientSocket.isConnected()) {
+           try {
+               HTTPRequest httpReq = new HTTPRequest(clientSocket);
+
+               if (httpReq.getURI() == null) {
+                   return;
+               }
+               
+               httpReq.setDissAllowedMIME(ProxyServer.getConfigFile().getDissallowedDomains().get(httpReq.getHost()));
+               if (httpReq.getDissAllowedMIME().contains("all")) {
+                   writeResponse(getBlockedSiteScreen(httpReq.getURI()), httpReq.getClientSocket().getOutputStream());
+                   httpReq.getClientSocket().close();
+               } else {
+               
+                   HTTPResponse httpResp = new HTTPResponse();
+                   httpResp.parseResponse(httpReq);
+
+                   if (httpResp.isImage()) {
+                       if (httpResp.isInValidContent()) {
+                           writeResponse(getErrorMessage(), httpReq.getClientSocket().getOutputStream());
+                       } else {
+                           writeResponse(httpResp.getHttpUrlConnection().getInputStream(), httpReq.getClientSocket().getOutputStream());
+                       }
+                   } else {
+                       writeResponse(httpResp.getData().getBytes(), httpReq.getClientSocket().getOutputStream());
+                   }
+                   httpReq.getClientSocket().close();
+               }
+
+           } catch (IOException e) {
+               e.printStackTrace();
+               System.out.println(host);
+           } 
+       }
        
     } 
+    
+    
+    /**
+     * 
+     * This method writes data from the server to the
+     * client.
+     * 
+     * @param bytes
+     * @param ostream
+     */
+    private void writeResponse(byte[] bytes, OutputStream ostream) {
+        ByteArrayInputStream in = new ByteArrayInputStream(bytes);
+        DataOutputStream out = new DataOutputStream(ostream);
+       // BufferedReader buf  = new BufferedReader(new InputStreamReader(in));
+        int count;
+        byte[] buffer = new byte[BUF_SIZE];
+        try {
+            
+            while ((count = in.read(buffer, 0, BUF_SIZE)) > -1) {
+                out.write(buffer, 0, count);
+            }
+            out.flush();
+            in.close();
+            out.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
     
     /**
      * 
@@ -193,88 +119,72 @@ public class ProxyThread extends Thread {
      * @param istream
      * @param ostream
      */
-    public synchronized void writeResponse(InputStream istream, OutputStream ostream, String uri) {
+    public synchronized void writeResponse(InputStream istream, OutputStream ostream) {
         //Client's ostream
         DataOutputStream out = new DataOutputStream(ostream);
-        //DataInputStream in = new DataInputStream(istream);
-        //dataTest = new ByteArrayOutputStream();
-        //PrintWriter dataWriter = new PrintWriter(data);
         byte buffer[]  = new byte[BUF_SIZE]; 
         int count; 
-        
-        
-   
+
          try {
-            //URL u = new URL("http://".concat(uri));
-            //URLConnection conn = u.openConnection();
-           // InputStream in = conn.getInputStream();
             while ( (count = istream.read( buffer, 0, BUF_SIZE)) > -1)  {
                   out.write(buffer, 0, count); 
-                  //dataWriter.println(buffer);
-                 // dataTest.write(buffer);
              }
+            out.flush();
+            out.close();
             //dataWriter.flush();
         } catch (IOException e) {
             e.printStackTrace();
         }
-        //System.out.println(dataTest.toString());
          
     }
-    
-    public synchronized void writeCachedResponse(OutputStream ostream, String filePath) {
-        DataOutputStream out = new DataOutputStream(ostream);
-        FileInputStream file = null;
-        byte buffer[] = new byte[BUF_SIZE];
-        int count;
-        try {
-            file = new FileInputStream(filePath);
-            
-            while ((count = file.read(buffer, 0, BUF_SIZE)) > -1) {
-               // System.out.print("data:"+buffer+"\n");
-                out.write(buffer, 0, count);
-            }
-            file.close();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-    
-    
-    
+
+
     /**
      * 
-     * This method will check whether or not the MIME types are allowed
-     * in the Content-Type header from the HTTP response.
+     * This method will replace all
+     * images of an html file if they are disallowed
+     * by an extension.
      * 
-     * @param args
-     * @param dissAllowedArgs
+     * @param line
+     * @param extension
      * @return
      */
-    public boolean validateResponse(List<String> args, List<String> dissAllowedArgs) {
-        String allImages = "image/*";
-        boolean blockAllImages = false;
-        if (dissAllowedArgs.contains(allImages)) {
-            blockAllImages = true;
-        }
-        if (args.size() > 0) {
-            for (String arg : args) {
-                if (blockAllImages) {
-                    if (arg.contains("image")) {
-                        //System.out.println("************Disallowed Type: " +arg);
-                        return false;
-                    }
-                } else if (dissAllowedArgs.contains(arg)) {
-                    //System.out.println("**************Disallowed Type: " +arg);
-                    return false;
+    private String validateLine(String line, List<String> extensionList) {
+        System.out.println(extensionList.toString());
+        Pattern srcReg = Pattern.compile("src\\s*=\\s*");
+        if (extensionList.contains("star")) {
+            //Block all images
+            System.out.println("-----BLOCKING ALL------");
+            Matcher m = srcReg.matcher(line);
+            if (m.find())
+                line = line.replaceAll("src\\s*=\\s*\".*\"", "src = \"\"");
+            return line;
+        } else if (extensionList.contains("none")) {
+            return line;
+        } else {
+            for (String extension : extensionList) {
+                System.out.println("CHECKING: " +extension);
+                if (line.contains("." + extension.toLowerCase())) {
+                    System.out.println("----------BLOCKING " +extension.toLowerCase()+ "-----------");
+                    Matcher m = srcReg.matcher(line);
+                    if (m.find())
+                        line = line.replaceAll("src\\s*=\\s*\".*\\."+extension.toLowerCase()+"\"", "src = \"\"");
+                    return line;
                 }
             }
         }
-       // System.out.println("################ALLOWED: " +args.toString());
-        return true;
+        
+        return line;
+        
     }
     
+    /**
+     * 
+     * This will display a blocked site.
+     * 
+     * @param uri
+     * @return
+     */
     public byte[] getBlockedSiteScreen(String uri) {
         String data = "<html><head><meta http-equiv=\"content-type\" content=\"text/html; "
                 + "charset=ISO-8859-1\"></head><body><h1>Access Forbidden!</h1>"
@@ -290,6 +200,13 @@ public class ProxyThread extends Thread {
         return errScreen.toString().getBytes();
     }
     
+    /**
+     * 
+     * This may be used to block sites that contain
+     * a dissallowed MIME type.
+     * 
+     * @return
+     */
     public byte[] getErrorMessage() {
         String data = "<html><head><meta meta http-equiv=\"content-type\" content=\"text/html; "
                 + "charset=ISO-8859-1\"></head><body>Forbidden Content!</body></html>";

@@ -31,14 +31,12 @@ www.microsoft.com     image/jpg image/gif
 www.sco.com              image/*
 
 
-images.google.com   image/*
+#images.google.com   image/*
 
-upload.wikimedia.org  image/*
+#upload.wikimedia.org  image/*
 
-www.cs.umn.edu  image/*
+#www.cs.umn.edu  image/*
 
-www.google-analytics.com    image/gif
+#www.google-analytics.com    image/gif
 
-www.umn.edu     image/*
-
-www1.umn.edu    image/jpeg
+www.umn.edu    image/png

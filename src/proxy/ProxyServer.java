@@ -1,4 +1,4 @@
-package proxy;
+package proxyTest;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -22,7 +22,7 @@ public class ProxyServer {
     Socket serverSock; 
     
     // Cache
-    private static HashMap<String, Cache> cache = new HashMap<String, Cache>();
+    //private static HashMap<String, Cache> cache = new HashMap<String, Cache>();
     
     // ConfigFile
     private static ConfigFile configFile;
@@ -49,7 +49,6 @@ public class ProxyServer {
             e.printStackTrace();
         }
 
-        ConfigFile cf = new ConfigFile(configfilePath);
         proxyPort = portNo;
 
         try {
@@ -59,8 +58,6 @@ public class ProxyServer {
         }
 
         logger.info("Server UP");
-       // System.out.println("Server Up");
-        //System.out.println("Server Details: " + proxySock.toString());
         while (true) { 
             try {
                 new ProxyThread(proxySock.accept()).start();
@@ -74,17 +71,12 @@ public class ProxyServer {
         return configFile;
     }
     
-    protected static HashMap<String, Cache> getCache() {
-        return cache;
-    }
-    
     // main method 
     public static void main(String args[]) throws IOException { 
         // Read the config file name and the Proxy Port. 
         // Do error checking. If no config file is specified, or if no Port is specified 
         // then exit. 
         if (args.length != 1) {
-            System.out.println(args[0]);
             throw new IOException("Usage: ProxyServer [0-9999]");
         }
         
@@ -95,9 +87,9 @@ public class ProxyServer {
         //System.out.println("OS detected: " +OS);
 
         if (OS.indexOf("win") >= 0) {
-            new ProxyServer(CWD + "\\src\\proxy\\config.txt", portNo);
+            new ProxyServer(CWD + "\\src\\proxyTest\\config.txt", portNo);
         } else {
-            new ProxyServer(CWD + "/src/proxy/config.txt", portNo);
+            new ProxyServer(CWD + "/src/proxyTest/config.txt", portNo);
         } 
     } 
 
