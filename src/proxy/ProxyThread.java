@@ -1,7 +1,10 @@
 package proxy;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.DataOutputStream;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -9,7 +12,9 @@ import java.io.PrintWriter;
 import java.net.HttpURLConnection;
 import java.net.Socket;
 import java.net.URL;
+import java.util.HashMap;
 import java.util.List;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -21,6 +26,8 @@ public class ProxyThread extends Thread {
     protected ConfigFile configFile;
     protected OutputStream rawOut;
     protected InputStream rawIn;
+    private HashMap<String, Cache> cache = new HashMap<String, Cache>();
+    private Logger logger;
     
 
     private int BUF_SIZE = 8192;
@@ -32,9 +39,10 @@ public class ProxyThread extends Thread {
     
     
 
-    public ProxyThread(Socket clientSocket) {
+    public ProxyThread(Socket clientSocket, Logger logger) {
         super("ProxyThread");
         this.clientSocket = clientSocket;
+        this.logger = logger;
         THREAD_COUNT++;
 
     }
@@ -70,7 +78,30 @@ public class ProxyThread extends Thread {
                            writeResponse(httpResp.getHttpUrlConnection().getInputStream(), httpReq.getClientSocket().getOutputStream());
                        }
                    } else {
-                       writeResponse(httpResp.getData().getBytes(), httpReq.getClientSocket().getOutputStream());
+                       if (httpResp.isCacheAble()) {
+                           if (cache.containsKey(httpReq.getHost())) {
+                               Cache cacheToCheck = cache.get(httpReq.getHost());
+                               if (cacheToCheck.isExpired()) {
+                                   System.out.println("Cache Expired!!!!!!");
+                                   Cache newCache = new Cache(httpResp.getMaxAgeCache(), httpResp.getMaxStaleCache(), httpReq.getHost());
+                                   newCache.writeData(httpResp.getData());
+                                   cache.put(httpReq.getHost(), newCache);
+                                   writeResponseFromCache(newCache.getFilePath(), httpReq.getClientSocket().getOutputStream());
+                               } else {
+                                   System.out.println("Cache not expired!!!");
+                                   writeResponseFromCache(cacheToCheck.getFilePath(), httpReq.getClientSocket().getOutputStream());
+                               }
+                           } else {
+                               System.out.println("Cache doesnt not exist!!!: " +httpReq.getHost());
+                               Cache newCache = new Cache(httpResp.getMaxAgeCache(), httpResp.getMaxStaleCache(), httpReq.getHost());
+                               newCache.writeData(httpResp.getData());
+                               cache.put(httpReq.getHost(), newCache);
+                               writeResponseFromCache(newCache.getFilePath(), httpReq.getClientSocket().getOutputStream()); 
+                           }
+                       } else {
+                           logger.info("Uncacheable!!" +httpReq.getHost());
+                           writeResponse(httpResp.getData().getBytes(), httpReq.getClientSocket().getOutputStream());
+                       }
                    }
                    httpReq.getClientSocket().close();
                }
@@ -84,6 +115,29 @@ public class ProxyThread extends Thread {
     } 
     
     
+    private void writeResponseFromCache(String filePath, OutputStream outputStream) {
+        FileReader fr;
+        DataOutputStream out = new DataOutputStream(outputStream);
+        try {
+            logger.info("--------Reading From Cache: " +filePath+ "-----------");
+            fr = new FileReader(filePath);
+            BufferedReader buf = new BufferedReader(fr);
+            String currentLine;
+            while ((currentLine = buf.readLine()) != null) {
+                out.writeBytes(currentLine);
+            }
+            out.flush();
+            out.close();
+            buf.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        
+        
+    }
+
     /**
      * 
      * This method writes data from the server to the

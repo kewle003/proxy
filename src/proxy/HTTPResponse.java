@@ -56,7 +56,7 @@ public class HTTPResponse {
             if (!https) {
                 conn = (HttpURLConnection) urlObj.openConnection();
                 conn.setRequestMethod(httpReq.getMethod());
-                conn.setReadTimeout(5000);
+               // conn.setReadTimeout(5000);
                 conn.addRequestProperty("Connection", "close");
 
                 //System.out.println("Response code for "+httpReq.getURI()+" : " +conn.getResponseCode());
@@ -247,6 +247,10 @@ public class HTTPResponse {
         System.out.println("------------END DATA----------");
     }
 
+    public boolean isCacheAble() {
+        return isCacheAble;
+    }
+    
     public String getData() {
         return data.toString();
     }

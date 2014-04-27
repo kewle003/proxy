@@ -1,5 +1,6 @@
 package proxy;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -41,7 +42,7 @@ public class ProxyServer {
             fileHandler.setFormatter(formatter);
 
             // the following statement is used to log any messages
-            logger.info("yay!!!");
+            logger.config("yay!!!");
 
         } catch (SecurityException e) {
             e.printStackTrace();
@@ -57,10 +58,10 @@ public class ProxyServer {
             e.printStackTrace();
         }
 
-        logger.info("Server UP");
+        logger.config("Server UP");
         while (true) { 
             try {
-                new ProxyThread(proxySock.accept()).start();
+                new ProxyThread(proxySock.accept(), logger).start();
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -85,12 +86,23 @@ public class ProxyServer {
         
         int portNo = Integer.parseInt(args[0]);
         //System.out.println("OS detected: " +OS);
-
+        File f = new File(CWD + "/ProxyServerCache");
+        if (!f.exists()) {
+            System.out.println("Making directory");
+            f.mkdir();
+        } else {
+            System.out.println(f.toString());
+        }
+        
+        f.deleteOnExit();
+        
         if (OS.indexOf("win") >= 0) {
             new ProxyServer(CWD + "\\src\\proxy\\config.txt", portNo);
         } else {
             new ProxyServer(CWD + "/src/proxy/config.txt", portNo);
         } 
+        
+        
     } 
 
 }

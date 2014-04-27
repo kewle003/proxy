@@ -1,20 +1,10 @@
 package proxy;
 
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.FileInputStream;
+import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
+import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
 
 /**
  * 
@@ -31,12 +21,8 @@ public class Cache {
     //The expiration date
     private long maxAge;
     private long maxStale;
-    
     private String fileName;
-    
-    private int BUF_SIZE = 8096;
-    
-    private String hostName;
+    private String filePath;
     
     /**
      * 
@@ -45,13 +31,16 @@ public class Cache {
      * @param data
      * @param date
      */
-    public Cache(long maxAge, long maxStale, String fileName, String hostName) {
+    public Cache(long maxAge, long maxStale, String hostName) {
         this.maxAge = maxAge;
         this.maxStale = maxStale;
-        this.fileName = fileName.substring(4, hostName.length() - 4);
-        //StringBuilder sb = new StringBuilder("");
+        this.fileName = hostName.substring(4, hostName.length() - 4)+ ".html"; 
+        File f = new File(System.getProperty("user.dir") + "/ProxyServerCache/" +hostName);
+        if (!f.exists()) {
+            f.mkdir();
+        }
+        filePath = System.getProperty("user.dir") + "/ProxyServerCache/" +hostName+ "/" +fileName;
         
-        this.hostName = hostName;
     }
     
     public void setMaxAge(long newMaxAge) {
@@ -72,60 +61,28 @@ public class Cache {
     }
     
     public String getFilePath() {
-        return fileName;
+        return filePath;
     }
     
     /**
      * 
-     * TODO: Store Headers
      * @param dataTest 
      * @param map 
      * 
      * @param uri
      */
-   // public void writeData(byte[] data) {
-    public void writeData(InputStream istream, List<HTTPHeader> headerList, ByteArrayOutputStream dataTest) {
-      
-        byte buffer[]  = new byte[BUF_SIZE]; 
-        int count; 
-        FileOutputStream file = null;
-        //ByteArrayInputStream in = new ByteArrayInputStream(ostream.toByteArray());
-        
-        
-         try {
-            file = new FileOutputStream(fileName);
-          
-           // for (HTTPHeader header : headerList) {
-             //   if (header.getHeaderName() == null)
-                    //file.write(header.toString().getBytes());
-               //     continue;
-                //else if (header.getHeaderName().equals("Content-Type"))
-                  //  file.write(header.toString().getBytes());
-                //else if (header.getHeaderName().equals("Content-Length"))
-                  //  file.write(header.toString().getBytes());
-            //}
-            
-            //file.write("\n".getBytes());
-            //file.write("Content-Type: text/html; charset=utf-8\n\n".getBytes());
-            while ( (count = istream.read(buffer, 0, BUF_SIZE)) > -1) {
-                file.write(buffer, 0, count);
-            }
-            //file.write(dataTest.toString().getBytes());
-            file.close();
-        } catch (IOException e) {
+    public void writeData(String data) {
+        try {
+            PrintWriter writer = new PrintWriter(filePath, "UTF-8");
+            writer.println(data);
+            writer.flush();
+            writer.close();
+        } catch (FileNotFoundException e) {
             e.printStackTrace();
-        } catch (Exception e) {
+        } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
-        } finally {
-            if (file != null) {
-                try {
-                    file.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
         }
-  
+        
     }
     
     

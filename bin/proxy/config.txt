@@ -39,4 +39,4 @@ www.sco.com              image/*
 
 #www.google-analytics.com    image/gif
 
-www.umn.edu    image/png
+#www.umn.edu    image/png
