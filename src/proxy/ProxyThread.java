@@ -26,7 +26,7 @@ public class ProxyThread extends Thread {
     protected ConfigFile configFile;
     protected OutputStream rawOut;
     protected InputStream rawIn;
-    private HashMap<String, Cache> cache = new HashMap<String, Cache>();
+    private static HashMap<String, Cache> cache = new HashMap<String, Cache>();
     private Logger logger;
     
 
@@ -57,7 +57,7 @@ public class ProxyThread extends Thread {
        if (clientSocket.isConnected()) {
            try {
                HTTPRequest httpReq = new HTTPRequest(clientSocket);
-
+              // System.out.println(cache.keySet());
                if (httpReq.getURI() == null) {
                    return;
                }
@@ -70,7 +70,11 @@ public class ProxyThread extends Thread {
                
                    HTTPResponse httpResp = new HTTPResponse();
                    httpResp.parseResponse(httpReq);
-
+                   if (httpResp.getHttpUrlConnection().getResponseCode() > 400) {
+                       writeResponse(getErrorMessage(httpResp.getHttpUrlConnection().getResponseMessage()), httpReq.getClientSocket().getOutputStream());
+                       httpReq.getClientSocket().close();
+                       return;
+                   }
                    if (httpResp.isImage()) {
                        if (httpResp.isInValidContent()) {
                            writeResponse(getErrorMessage(), httpReq.getClientSocket().getOutputStream());
@@ -82,24 +86,24 @@ public class ProxyThread extends Thread {
                            if (cache.containsKey(httpReq.getHost())) {
                                Cache cacheToCheck = cache.get(httpReq.getHost());
                                if (cacheToCheck.isExpired()) {
-                                   System.out.println("Cache Expired!!!!!!");
+                                   logger.info(""+httpReq.getHost()+"::expired");
                                    Cache newCache = new Cache(httpResp.getMaxAgeCache(), httpResp.getMaxStaleCache(), httpReq.getHost());
-                                   newCache.writeData(httpResp.getData());
+                                   newCache.writeData(httpResp.getData(), logger);
                                    cache.put(httpReq.getHost(), newCache);
-                                   writeResponseFromCache(newCache.getFilePath(), httpReq.getClientSocket().getOutputStream());
+                                   writeResponseFromCache(newCache.getFilePath(), httpReq.getClientSocket().getOutputStream(), httpReq.getHost());
                                } else {
                                    System.out.println("Cache not expired!!!");
-                                   writeResponseFromCache(cacheToCheck.getFilePath(), httpReq.getClientSocket().getOutputStream());
+                                   writeResponseFromCache(cacheToCheck.getFilePath(), httpReq.getClientSocket().getOutputStream(), httpReq.getHost());
                                }
                            } else {
                                System.out.println("Cache doesnt not exist!!!: " +httpReq.getHost());
                                Cache newCache = new Cache(httpResp.getMaxAgeCache(), httpResp.getMaxStaleCache(), httpReq.getHost());
-                               newCache.writeData(httpResp.getData());
+                               newCache.writeData(httpResp.getData(), logger);
                                cache.put(httpReq.getHost(), newCache);
-                               writeResponseFromCache(newCache.getFilePath(), httpReq.getClientSocket().getOutputStream()); 
+                               writeResponseFromCache(newCache.getFilePath(), httpReq.getClientSocket().getOutputStream(), httpReq.getHost()); 
                            }
                        } else {
-                           logger.info("Uncacheable!!" +httpReq.getHost());
+                           logger.info(httpReq.getHost()+"::contacted orgin server");
                            writeResponse(httpResp.getData().getBytes(), httpReq.getClientSocket().getOutputStream());
                        }
                    }
@@ -115,11 +119,13 @@ public class ProxyThread extends Thread {
     } 
     
     
-    private void writeResponseFromCache(String filePath, OutputStream outputStream) {
+    
+
+    private void writeResponseFromCache(String filePath, OutputStream outputStream, String hostName) {
         FileReader fr;
         DataOutputStream out = new DataOutputStream(outputStream);
         try {
-            logger.info("--------Reading From Cache: " +filePath+ "-----------");
+            logger.info(""+hostName+"::"+filePath+ " served from cache");
             fr = new FileReader(filePath);
             BufferedReader buf = new BufferedReader(fr);
             String currentLine;
@@ -191,46 +197,6 @@ public class ProxyThread extends Thread {
         }
          
     }
-
-
-    /**
-     * 
-     * This method will replace all
-     * images of an html file if they are disallowed
-     * by an extension.
-     * 
-     * @param line
-     * @param extension
-     * @return
-     */
-    private String validateLine(String line, List<String> extensionList) {
-        System.out.println(extensionList.toString());
-        Pattern srcReg = Pattern.compile("src\\s*=\\s*");
-        if (extensionList.contains("star")) {
-            //Block all images
-            System.out.println("-----BLOCKING ALL------");
-            Matcher m = srcReg.matcher(line);
-            if (m.find())
-                line = line.replaceAll("src\\s*=\\s*\".*\"", "src = \"\"");
-            return line;
-        } else if (extensionList.contains("none")) {
-            return line;
-        } else {
-            for (String extension : extensionList) {
-                System.out.println("CHECKING: " +extension);
-                if (line.contains("." + extension.toLowerCase())) {
-                    System.out.println("----------BLOCKING " +extension.toLowerCase()+ "-----------");
-                    Matcher m = srcReg.matcher(line);
-                    if (m.find())
-                        line = line.replaceAll("src\\s*=\\s*\".*\\."+extension.toLowerCase()+"\"", "src = \"\"");
-                    return line;
-                }
-            }
-        }
-        
-        return line;
-        
-    }
     
     /**
      * 
@@ -266,6 +232,19 @@ public class ProxyThread extends Thread {
                 + "charset=ISO-8859-1\"></head><body>Forbidden Content!</body></html>";
         StringBuilder errScreen = new StringBuilder("");
         errScreen.append("HTTP/1.1 403 Forbidden\r\n");
+        errScreen.append("Content-Type: text/html\r\n");
+        errScreen.append("Content-Length: ");
+        errScreen.append(data.length());
+        errScreen.append("\r\n\r\n");
+        errScreen.append(data);
+        return errScreen.toString().getBytes();
+    }
+    
+    private byte[] getErrorMessage(String responseMessage) {
+        String data = "<html><head><meta meta http-equiv=\"content-type\" content=\"text/html; "
+                + "charset=ISO-8859-1\"></head><body>Error Occured!</body></html>";
+        StringBuilder errScreen = new StringBuilder("");
+        errScreen.append(responseMessage);
         errScreen.append("Content-Type: text/html\r\n");
         errScreen.append("Content-Length: ");
         errScreen.append(data.length());

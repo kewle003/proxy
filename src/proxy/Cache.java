@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
+import java.util.logging.Logger;
 
 /**
  * 
@@ -19,6 +20,7 @@ public class Cache {
     
     
     //The expiration date
+    private String hostName;
     private long maxAge;
     private long maxStale;
     private String fileName;
@@ -40,7 +42,7 @@ public class Cache {
             f.mkdir();
         }
         filePath = System.getProperty("user.dir") + "/ProxyServerCache/" +hostName+ "/" +fileName;
-        
+        this.hostName = hostName;
     }
     
     public void setMaxAge(long newMaxAge) {
@@ -66,13 +68,15 @@ public class Cache {
     
     /**
      * 
+     * @param logger 
      * @param dataTest 
      * @param map 
      * 
      * @param uri
      */
-    public void writeData(String data) {
+    public void writeData(String data, Logger logger) {
         try {
+            logger.info(hostName+"::"+filePath);
             PrintWriter writer = new PrintWriter(filePath, "UTF-8");
             writer.println(data);
             writer.flush();

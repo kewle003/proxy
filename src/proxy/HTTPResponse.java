@@ -10,6 +10,7 @@ import java.net.MalformedURLException;
 import java.net.Socket;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -17,6 +18,7 @@ import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
 import javax.net.ssl.HttpsURLConnection;
 
 
@@ -56,7 +58,6 @@ public class HTTPResponse {
             if (!https) {
                 conn = (HttpURLConnection) urlObj.openConnection();
                 conn.setRequestMethod(httpReq.getMethod());
-               // conn.setReadTimeout(5000);
                 conn.addRequestProperty("Connection", "close");
 
                 //System.out.println("Response code for "+httpReq.getURI()+" : " +conn.getResponseCode());
@@ -159,7 +160,7 @@ public class HTTPResponse {
                     }
                    conn.disconnect();
                 } else {
-                    System.out.println("HTTP BAD CODE: " + conn.getResponseCode()+ " for uri: " +httpReq.getURI());
+                    
                 }
             } else {
                 System.out.println("https!!!!!!!!!!!!");
@@ -185,6 +186,15 @@ public class HTTPResponse {
 
     private void parseCacheHeaderVal(String headerField) {
         
+    }
+    
+    private String writeErrorMessage() {
+        
+        StringBuilder s = new StringBuilder("");
+        s.append("HTTP/1.1 404 Not found");
+        s.append("Content-Type: text/html; charset=ISO-8859-1");
+        s.append("Connection: close");
+        return s.toString();
     }
 
     /**
