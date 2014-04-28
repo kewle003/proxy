@@ -185,6 +185,23 @@ public class HTTPResponse {
     }
 
     private void parseCacheHeaderVal(String headerField) {
+        StringTokenizer st = new StringTokenizer(headerField);
+        String value = new String("");
+        while (st.hasMoreElements()) {
+            value = st.nextToken();
+            System.out.println(value+ " ");
+            if (value != null) {
+                if (value.contains("max-age")) {
+                    //System.out.println("MaxAge encountered!! " + value);
+                    //System.out.println("Attempt" + value.substring(8));
+                    maxAge = Integer.parseInt(value.substring(8))*1000;
+                } else if (value.contains("max-stale")) {
+                    //System.out.println("MaxStale Encountered!!" + value);
+                    //System.out.println("Attempt" + value.substring(10));
+                    maxStale = Integer.parseInt(value.substring(10))*1000;
+                }
+            }
+        }
         
     }
     

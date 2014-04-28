@@ -1,8 +1,14 @@
 package proxy;
 
 
+import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.logging.Logger;
@@ -25,6 +31,7 @@ public class Cache {
     private long maxStale;
     private String fileName;
     private String filePath;
+    private int BUF_SIZE = 8321;
     
     /**
      * 
@@ -89,6 +96,32 @@ public class Cache {
         
     }
     
+    public void writeData(InputStream istream, Logger logger) {
+        try {
+            logger.info(hostName+"::"+filePath);
+            BufferedOutputStream writer = new BufferedOutputStream(new FileOutputStream(filePath));
+            //BufferedReader inLine = new BufferedReader(new InputStreamReader(inputStream));
+            byte[] buffer = new byte[BUF_SIZE];
+            int count;
+            
+            while ((count = istream.read(buffer, 0, BUF_SIZE )) > -1) {
+                writer.write(buffer, 0, count);
+            }
+            writer.flush();
+            writer.close();
+            istream.close();
+            //inLine.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        
+    }
+    
     
     /**
      * 
@@ -112,6 +145,8 @@ public class Cache {
         }
         return true;
     }
+
+    
 
     
     

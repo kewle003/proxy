@@ -1,8 +1,10 @@
 package proxy;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.DataOutputStream;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
@@ -75,6 +77,7 @@ public class ProxyThread extends Thread {
                        httpReq.getClientSocket().close();
                        return;
                    }
+                   httpResp.getHttpUrlConnection().connect();
                    if (httpResp.isImage()) {
                        if (httpResp.isInValidContent()) {
                            writeResponse(getErrorMessage(), httpReq.getClientSocket().getOutputStream());
@@ -82,32 +85,36 @@ public class ProxyThread extends Thread {
                            writeResponse(httpResp.getHttpUrlConnection().getInputStream(), httpReq.getClientSocket().getOutputStream());
                        }
                    } else {
+                       
+                       
                        if (httpResp.isCacheAble()) {
                            if (cache.containsKey(httpReq.getHost())) {
                                Cache cacheToCheck = cache.get(httpReq.getHost());
                                if (cacheToCheck.isExpired()) {
-                                   logger.info(""+httpReq.getHost()+"::expired");
+                                   //logger.info(""+httpReq.getHost()+"::expired");
+                                   System.out.println("Expired for: " +httpReq.getHost());
                                    Cache newCache = new Cache(httpResp.getMaxAgeCache(), httpResp.getMaxStaleCache(), httpReq.getHost());
                                    newCache.writeData(httpResp.getData(), logger);
                                    cache.put(httpReq.getHost(), newCache);
                                    writeResponseFromCache(newCache.getFilePath(), httpReq.getClientSocket().getOutputStream(), httpReq.getHost());
                                } else {
-                                   System.out.println("Cache not expired!!!");
+                                   System.out.println("Cache not expired for: " +httpReq.getHost());
                                    writeResponseFromCache(cacheToCheck.getFilePath(), httpReq.getClientSocket().getOutputStream(), httpReq.getHost());
                                }
                            } else {
-                               System.out.println("Cache doesnt not exist!!!: " +httpReq.getHost());
+                               System.out.println("Cache doesnt not exist: " +httpReq.getHost());
                                Cache newCache = new Cache(httpResp.getMaxAgeCache(), httpResp.getMaxStaleCache(), httpReq.getHost());
                                newCache.writeData(httpResp.getData(), logger);
                                cache.put(httpReq.getHost(), newCache);
                                writeResponseFromCache(newCache.getFilePath(), httpReq.getClientSocket().getOutputStream(), httpReq.getHost()); 
                            }
                        } else {
-                           logger.info(httpReq.getHost()+"::contacted orgin server");
+                           //logger.info(httpReq.getHost()+"::contacted orgin server");
                            writeResponse(httpResp.getData().getBytes(), httpReq.getClientSocket().getOutputStream());
                        }
                    }
                    httpReq.getClientSocket().close();
+                   httpResp.getHttpUrlConnection().disconnect();
                }
 
            } catch (IOException e) {
@@ -121,7 +128,7 @@ public class ProxyThread extends Thread {
     
     
 
-    private void writeResponseFromCache(String filePath, OutputStream outputStream, String hostName) {
+  /*  private void writeResponseFromCache(String filePath, OutputStream outputStream, String hostName) {
         FileReader fr;
         DataOutputStream out = new DataOutputStream(outputStream);
         try {
@@ -142,6 +149,28 @@ public class ProxyThread extends Thread {
         }
         
         
+    }*/
+    
+    private void writeResponseFromCache(String filePath, OutputStream outputStream, String hostName) {
+        DataOutputStream out = new DataOutputStream(outputStream);
+        logger.info(""+hostName+"::"+filePath+ " served from cache");
+        try {
+            BufferedInputStream reader = new BufferedInputStream(new FileInputStream(filePath));
+            byte[] buffer = new byte[BUF_SIZE];
+            int count;
+            while ((count = reader.read(buffer, 0, BUF_SIZE)) > -1) {
+                out.write(buffer, 0, count);
+            }
+            out.flush();
+            out.close();
+            reader.close();
+        } catch (FileNotFoundException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
     }
 
     /**
