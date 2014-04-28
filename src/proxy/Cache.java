@@ -133,6 +133,7 @@ public class Cache {
      */
     public boolean isExpired() {
         long val = System.currentTimeMillis();
+        System.out.println("Comparing: " +val+" to the maxAge: " + maxAge+ " and the maxStale: " +maxStale);
         if (maxStale != -1) {
             long temp = maxAge + maxStale;
             if (temp > val) {

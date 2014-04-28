@@ -32,6 +32,7 @@ public class HTTPResponse {
     private int maxStale;
     private boolean image = false;
     private boolean inValidContent = false;
+    private boolean isText = false;
     private HttpURLConnection conn;
     private HTTPRequest httpReq;
 
@@ -90,7 +91,7 @@ public class HTTPResponse {
                 }
                 
                 //Uncomment for debugging
-              //  printHeaderValues(conn.getHeaderFields());
+                //printHeaderValues(conn.getHeaderFields());
                 
                 
                 //If POST set the DoOutput to true
@@ -129,38 +130,42 @@ public class HTTPResponse {
                 } 
                 
                 if (conn.getResponseCode() < 300) {
-                
-                    if (!chunked) {
-                        conn.connect();
-                        //System.out.println("-----------NOT CHUNKED--------------");
-                        BufferedReader inLine = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-                        StringBuffer init = new StringBuffer("");
-                        String inputLine;
-                        Pattern headReg = Pattern.compile("<\\s*head\\s*>");
-                        while ((inputLine = inLine.readLine()) != null) {
-                            Matcher m = headReg.matcher(inputLine);
+                    if (conn.getContentType().contains("text/")) {
+                        isText = true;
+                        if (!chunked) {                            
+                            conn.connect();
+                            //System.out.println("-----------NOT CHUNKED--------------");
+                            BufferedReader inLine = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                            StringBuffer init = new StringBuffer("");
+                            String inputLine;
+                            Pattern headReg = Pattern.compile("<\\s*head\\s*>");
+                            while ((inputLine = inLine.readLine()) != null) {
+                                Matcher m = headReg.matcher(inputLine);
+                                if (m.find()) {
+                                    inputLine = inputLine.replaceFirst("<\\s*head\\s*>", "<head><base href = \"" +httpReq.getURI()+ "\"/>");
+                                }
+                                init.append(inputLine);
+                            }                    
+                            data = new StringBuilder(new String(init.toString().getBytes(), "UTF-8")); 
+                            inLine.close();
+                        } else {
+                            //System.out.println("--------------CHUNKED DATA------------");
+                            conn.connect();
+                            ByteArrayOutputStream sink = new ByteArrayOutputStream();
+                            writeChunked(conn.getInputStream(), sink);  
+                            data = new StringBuilder(new String(sink.toByteArray(),"UTF-8"));
+                            Pattern headReg = Pattern.compile("<\\s*head\\s*>");
+                            Matcher m = headReg.matcher(data.toString());
                             if (m.find()) {
-                                inputLine = inputLine.replaceFirst("<\\s*head\\s*>", "<head><base href = \"" +httpReq.getURI()+ "\"/>");
+                                data = new StringBuilder(data.toString().replaceFirst("<\\s*head\\s*>", "<head><base href = \"" +httpReq.getURI()+ "\"/>"));
                             }
-                            init.append(inputLine);
-                        }                    
-                        data = new StringBuilder(new String(init.toString().getBytes(), "UTF-8")); 
-                        inLine.close();
-                    } else {
-                        //System.out.println("--------------CHUNKED DATA------------");
-                        conn.connect();
-                        ByteArrayOutputStream sink = new ByteArrayOutputStream();
-                        writeChunked(conn.getInputStream(), sink);  
-                        data = new StringBuilder(new String(sink.toByteArray(),"UTF-8"));
-                        Pattern headReg = Pattern.compile("<\\s*head\\s*>");
-                        Matcher m = headReg.matcher(data.toString());
-                        if (m.find()) {
-                            data = new StringBuilder(data.toString().replaceFirst("<\\s*head\\s*>", "<head><base href = \"" +httpReq.getURI()+ "\"/>"));
                         }
+                        conn.disconnect();
+                    } else {
+                        isText = false;
                     }
-                   conn.disconnect();
                 } else {
-                    
+                    System.out.println("FUUUUUUUUUUUUCCCKKKKKKKKKKKKK");
                 }
             } else {
                 System.out.println("https!!!!!!!!!!!!");
@@ -189,7 +194,7 @@ public class HTTPResponse {
         String value = new String("");
         while (st.hasMoreElements()) {
             value = st.nextToken();
-            System.out.println(value+ " ");
+           // System.out.println(value+ " ");
             if (value != null) {
                 if (value.contains("max-age")) {
                     //System.out.println("MaxAge encountered!! " + value);
@@ -275,7 +280,7 @@ public class HTTPResponse {
     }
 
     public boolean isCacheAble() {
-        return isCacheAble;
+        return (isCacheAble && isText);
     }
     
     public String getData() {
@@ -300,6 +305,10 @@ public class HTTPResponse {
     
     public HttpURLConnection getHttpUrlConnection() {
         return conn;
+    }
+    
+    public boolean isText() {
+        return isText;
     }
 
 }
