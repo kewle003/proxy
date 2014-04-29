@@ -35,8 +35,8 @@ www.sco.com              image/*
 
 #upload.wikimedia.org  image/*
 
-#www.cs.umn.edu  image/*
+www.cs.umn.edu  image/*
 
 #www.google-analytics.com    image/gif
 
-#www.umn.edu    image/png
+#www.umn.edu    

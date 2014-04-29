@@ -2,13 +2,11 @@ package proxy;
 
 
 import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.logging.Logger;
@@ -35,10 +33,12 @@ public class Cache {
     
     /**
      * 
-     * Constructor
+     * Constructor, takes in three values specified
+     * by the Cache-Control header.
      * 
-     * @param data
-     * @param date
+     * @param maxAge - specified by max-age field in milliseconds
+     * @param maxStale - specified by max-stale field in milliseconds
+     * @param hostName - specified by HTTPRequest object's hostName field
      */
     public Cache(long maxAge, long maxStale, String hostName) {
         this.maxAge = maxAge;
@@ -75,11 +75,12 @@ public class Cache {
     
     /**
      * 
-     * @param logger 
-     * @param dataTest 
-     * @param map 
+     * This method will write the
+     * data in String format to the cached
+     * file in ProxyServerCache/hostName directory.
      * 
-     * @param uri
+     * @param data - The data from HTTPResponse object
+     * @param logger - Used for debugging
      */
     public void writeData(String data, Logger logger) {
         try {
@@ -96,6 +97,14 @@ public class Cache {
         
     }
     
+    /**
+     * 
+     * Same as above but writes rawData.
+     * Currently not in use
+     * 
+     * @param istream
+     * @param logger
+     */
     public void writeData(InputStream istream, Logger logger) {
         try {
             logger.info(hostName+"::"+filePath);
@@ -126,9 +135,11 @@ public class Cache {
     /**
      * 
      * This method checks if the cache data
-     * has expired.
+     * has expired. It does so by checking
+     * the max-age against the current time. Furthermore
+     * if max-stale is specified it will add this to the
+     * max-age value.
      * 
-     * @param c
      * @return true - it has expired, false - it has not
      */
     public boolean isExpired() {

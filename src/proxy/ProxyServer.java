@@ -3,8 +3,6 @@ package proxy;
 import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
-import java.net.Socket;
-import java.util.HashMap;
 import java.util.logging.FileHandler;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
@@ -16,35 +14,51 @@ public class ProxyServer {
     private static Logger logger  = Logger.getLogger("MyLogger");
     
     // Data Members: 
-    int proxyPort; // Proxy�s port
-    ServerSocket proxySock; // The Proxy Server will listen on this socket 
+    /**
+     * Proxy port for the server
+     */
+    int proxyPort;
+    /**
+     * The Proxy Server will listen on this socket 
+     */
+    ServerSocket proxySock; 
+            
     
-    // serverSock represents the Proxy�s connection with a HTTP server 
-    Socket serverSock; 
-    
-    // Cache
-    //private static HashMap<String, Cache> cache = new HashMap<String, Cache>();
-    
-    // ConfigFile
+    /**
+     * A handle on a ConfigFile object
+     */
     private static ConfigFile configFile;
     
-    // Constructor 
-    public ProxyServer (String configfilePath, int portNo, final File f) {
+    /**
+     * 
+     * Default Constructor
+     * 
+     * @param configfilePath - The path to our config file
+     * @param portNo - the port that our proxy server runs on
+     * @param proxyCacheDir - the ProxyServerCache directory
+     */
+    public ProxyServer (String configfilePath, int portNo, final File proxyCacheDir) {
 
+        //Add the thread that waits for the program to be killed to delete ProxyServerCache
         FileHandler fileHandler;
         Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
-
+            //If shutdownHook called, delete ProxyServerCache
             public void run() {
-                System.out.println("Deleting");
-                f.delete();
+                try {
+                    deleteProxyCacheDirectory(proxyCacheDir);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
         }));
 
         try {
+            //Out configuration file
             configFile =  new ConfigFile(configfilePath);
             // This block configure the logger with handler and formatter
             fileHandler = new FileHandler("LoggerFile");
             logger.addHandler(fileHandler);
+            
             SimpleFormatter formatter = new SimpleFormatter();
             fileHandler.setFormatter(formatter);
 
@@ -60,6 +74,7 @@ public class ProxyServer {
         proxyPort = portNo;
 
         try {
+            //Bind the proxyServer socket
             proxySock = new ServerSocket(proxyPort);
         } catch (IOException e) {
             e.printStackTrace();
@@ -68,6 +83,7 @@ public class ProxyServer {
         logger.config("Server UP");
         while (true) { 
             try {
+                //Create a client socket thread
                 new ProxyThread(proxySock.accept(), logger).start();
             } catch (IOException e) {
                 e.printStackTrace();
@@ -75,6 +91,13 @@ public class ProxyServer {
         } // end of while 
     } 
     
+    /**
+     * 
+     * Static method used to retrieve the configFile.
+     * I know this is bad programming practice.
+     * 
+     * @return
+     */
     protected static ConfigFile getConfigFile() {
         return configFile;
     }
@@ -87,18 +110,16 @@ public class ProxyServer {
         if (args.length != 1) {
             throw new IOException("Usage: ProxyServer [0-9999]");
         }
-        
-        //System.out.println("Working Directory = " +
-          //      CWD);
-        
+
         int portNo = Integer.parseInt(args[0]);
-        //System.out.println("OS detected: " +OS);
+        
+        //Create our ProxyServerCache directory
         final File f = new File(CWD + "/ProxyServerCache");
         if (!f.exists()) {
-            System.out.println("Making directory");
+            logger.info("Creating Directory: " +f.toString());
             f.mkdir();
         } else {
-            System.out.println(f.toString());
+            logger.info("Directory exists whyyyyyy");
         }
         
         
@@ -111,6 +132,49 @@ public class ProxyServer {
         
         
     } 
-
-   
+    
+    /**
+     * 
+     * This method will recurse through
+     * the ProxyServerCache directory and delete
+     * all files. The trick is is that security blocks
+     * us from deleting directories if there is other
+     * files within the directory.
+     * 
+     * @param file
+     * @throws IOException
+     * @author mkyong - www.mykong.com
+     */
+    public static void deleteProxyCacheDirectory(File file) throws IOException {
+            if (file.isDirectory()) {
+     
+                //directory is empty, then delete it
+                if (file.list().length==0) {
+     
+                   file.delete();
+                } else {
+     
+                   //list all the directory contents
+                   String files[] = file.list();
+                   
+                   //Iterate through all subdirectories/files
+                   for (String temp : files) {
+                      //construct the file structure
+                      File fileDelete = new File(file, temp);
+ 
+                      //Recursive Call
+                     deleteProxyCacheDirectory(fileDelete);
+                   }
+     
+                   //check the directory again, if empty then delete it
+                   if (file.list().length==0) {
+                     file.delete();
+                   }
+                }
+     
+            } else {
+                //if file, then delete it
+                file.delete();
+            }
+    } 
 }

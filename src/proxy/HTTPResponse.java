@@ -7,10 +7,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
-import java.net.Socket;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -22,32 +20,69 @@ import java.util.regex.Pattern;
 import javax.net.ssl.HttpsURLConnection;
 
 
+/**
+ * 
+ * This class handles everything to do with  an
+ * HTTP Response for our Proxy Server.
+ * 
+ * @author mark
+ *
+ */
 public class HTTPResponse {
     
+    //The max buf size we wish to give
     private int BUF_SIZE = 3000;
     
+    //The data stored from text/extension
     private StringBuilder data;
+    
+    //Boolean value to check if the response may be cached
     boolean isCacheAble;
+    
+    //Values used for Cache control
     private int maxAge;
     private int maxStale;
+    
+    //Boolean value to check if Content-Type is type image/extension
     private boolean image = false;
+    
+    //Boolean value to check if Content-Type is allowed by Proxy
     private boolean inValidContent = false;
+    
+    //Boolean value to check if Cont-Type is type text/extension
     private boolean isText = false;
+    
+    //A handle on an HttpURLConnection object
     private HttpURLConnection conn;
+    
+    //A handle on our HTTPRequest object
     private HTTPRequest httpReq;
 
-    
+    /**
+     * 
+     * Default constructor. Sets initial
+     * max-age and max-stale values.
+     * 
+     */
     public HTTPResponse() {
         maxAge = 0;
         maxStale = 0;
     }
     
+    /**
+     * 
+     * This method will parse the HTTP Response received by
+     * the server based on the HTTP Request that the client
+     * browser sends. It will check for valid content, cache
+     * controls, response codes, as well as redirections.
+     * 
+     * @param httpReqs
+     */
     public void parseResponse(HTTPRequest httpReqs) {
         try {
             httpReq = httpReqs;
             URL urlObj = new URL(httpReq.getURI());
             boolean https = false;
-            boolean post = false;
             boolean redirect = false;
             boolean chunked = false;
             isCacheAble = false;
@@ -56,12 +91,14 @@ public class HTTPResponse {
                 https = true;
             } 
             
+            //http protocol?
             if (!https) {
+                //Create an HttpURLConnection object
                 conn = (HttpURLConnection) urlObj.openConnection();
                 conn.setRequestMethod(httpReq.getMethod());
-                conn.addRequestProperty("Connection", "close");
+                conn.addRequestProperty("Connection", "close"); /* Professor Tripathi said to work with this */
 
-                //System.out.println("Response code for "+httpReq.getURI()+" : " +conn.getResponseCode());
+                //Verify that the image/extension is valid
                 if (conn.getHeaderField("Content-Type") != null) {
                     String contentType = conn.getHeaderField("Content-Type");
                     if (contentType.contains("image")) {
@@ -71,19 +108,22 @@ public class HTTPResponse {
                     }
                 }
                 
+                //Check the Cache-Control header
                 if (conn.getHeaderField("Cache-Control") != null) {
-                   // System.out.println("Cache-Control Value: " +conn.getHeaderField("Cache-Control"));
                     String cacheVal = conn.getHeaderField("Cache-Control");
+                    //Are we capable of caching?
                     if (cacheVal.contains("no-cache") ||
                             cacheVal.contains("no-store") ||
                             cacheVal.contains("private")) {
                         isCacheAble = false;
                     } else {
                         isCacheAble = true;
+                        //parse out max-age and max-stale
                         parseCacheHeaderVal(conn.getHeaderField("Cache-Control"));
                     }
                 }
                 
+                //Check if we need to read the data as a chunked data
                 if (conn.getHeaderField("Transfer-Encoding") != null) {
                     String value = conn.getHeaderField("Transfer-Encoding");
                     if (value.equalsIgnoreCase("chunked"));
@@ -97,10 +137,10 @@ public class HTTPResponse {
                 //If POST set the DoOutput to true
                 if (httpReq.getMethod().equalsIgnoreCase("POST")) {
                     conn.setDoOutput(true);
-                    post = true;
                 }
                 
                 int responseCode = conn.getResponseCode();
+                //Check if we need to redirect
                 if (responseCode != HttpURLConnection.HTTP_OK) {
                     if (responseCode == HttpURLConnection.HTTP_MOVED_TEMP ||
                             responseCode == HttpURLConnection.HTTP_MOVED_PERM ||
@@ -109,9 +149,8 @@ public class HTTPResponse {
                     }
                 }
                 
-                
+                //If we encounter a redirection
                 if (redirect) {
-                    System.out.println("REDIRECTION!!!!!!!!!!");
                     //Grab the redirection url
                     String redirectUrl = conn.getHeaderField("Location");
                     
@@ -129,18 +168,20 @@ public class HTTPResponse {
                     
                 } 
                 
+                //Do we have a valid response?
                 if (conn.getResponseCode() < 300) {
                     if (conn.getContentType().contains("text/")) {
                         isText = true;
                         if (!chunked) {                            
                             conn.connect();
-                            //System.out.println("-----------NOT CHUNKED--------------");
+                            //Create our InputSocket buffer
                             BufferedReader inLine = new BufferedReader(new InputStreamReader(conn.getInputStream()));
                             StringBuffer init = new StringBuffer("");
                             String inputLine;
                             Pattern headReg = Pattern.compile("<\\s*head\\s*>");
                             while ((inputLine = inLine.readLine()) != null) {
                                 Matcher m = headReg.matcher(inputLine);
+                                //Check if <head> is in the string, if so set the <base> tag href
                                 if (m.find()) {
                                     inputLine = inputLine.replaceFirst("<\\s*head\\s*>", "<head><base href = \"" +httpReq.getURI()+ "\"/>");
                                 }
@@ -149,13 +190,14 @@ public class HTTPResponse {
                             data = new StringBuilder(new String(init.toString().getBytes(), "UTF-8")); 
                             inLine.close();
                         } else {
-                            //System.out.println("--------------CHUNKED DATA------------");
                             conn.connect();
                             ByteArrayOutputStream sink = new ByteArrayOutputStream();
+                            //Write the chunked data
                             writeChunked(conn.getInputStream(), sink);  
                             data = new StringBuilder(new String(sink.toByteArray(),"UTF-8"));
                             Pattern headReg = Pattern.compile("<\\s*head\\s*>");
                             Matcher m = headReg.matcher(data.toString());
+                            //Check if <head> is in the string, if so set the <base> tag href
                             if (m.find()) {
                                 data = new StringBuilder(data.toString().replaceFirst("<\\s*head\\s*>", "<head><base href = \"" +httpReq.getURI()+ "\"/>"));
                             }
@@ -164,8 +206,6 @@ public class HTTPResponse {
                     } else {
                         isText = false;
                     }
-                } else {
-                    System.out.println("FUUUUUUUUUUUUCCCKKKKKKKKKKKKK");
                 }
             } else {
                 System.out.println("https!!!!!!!!!!!!");
@@ -180,48 +220,57 @@ public class HTTPResponse {
         }
     }
     
+    /**
+     * 
+     * This method will validate an image/extension
+     * type. If it is a type that we wish to block
+     * we must notify the HTTPResponse object.
+     * 
+     * @param contentType
+     */
     private void validateContentType(String contentType) {
+        System.out.println();
         for (String contentVal : httpReq.getDissAllowedMIME()) {
-            if (contentType.contains(contentVal)) {
+            System.out.print(contentVal+ " ");
+            if (contentVal.equals("star")) {
+                inValidContent = true;
+                return;
+            } else if (contentType.contains(contentVal)) {
                 inValidContent = true;
                 return;
             }
+            System.out.println();
         }
     }
 
+    /**
+     * 
+     * This method will take the Cache-Control header field
+     * and will parse out max-age and max-stale.
+     * 
+     * @param headerField
+     */
     private void parseCacheHeaderVal(String headerField) {
         StringTokenizer st = new StringTokenizer(headerField);
         String value = new String("");
         while (st.hasMoreElements()) {
             value = st.nextToken();
-           // System.out.println(value+ " ");
             if (value != null) {
                 if (value.contains("max-age")) {
-                    //System.out.println("MaxAge encountered!! " + value);
-                    //System.out.println("Attempt" + value.substring(8));
                     maxAge = Integer.parseInt(value.substring(8))*1000;
                 } else if (value.contains("max-stale")) {
-                    //System.out.println("MaxStale Encountered!!" + value);
-                    //System.out.println("Attempt" + value.substring(10));
                     maxStale = Integer.parseInt(value.substring(10))*1000;
                 }
             }
         }
         
     }
-    
-    private String writeErrorMessage() {
-        
-        StringBuilder s = new StringBuilder("");
-        s.append("HTTP/1.1 404 Not found");
-        s.append("Content-Type: text/html; charset=ISO-8859-1");
-        s.append("Connection: close");
-        return s.toString();
-    }
 
     /**
      * 
-     * 
+     * This method is used for writing rawdata from the
+     * server's InputStream to the client's ByteArrayOutputStream buffer.
+     * This is used to store data if it is chunked.
      * 
      * @param istream
      * @param ostream
@@ -242,7 +291,9 @@ public class HTTPResponse {
 
     /**
      * 
-     * Method used for debugging purposes.
+     * This is used for debugging. It will grab
+     * the Response headers and print out the values
+     * in an Array.
      * 
      * @param headerFields
      */
@@ -279,14 +330,26 @@ public class HTTPResponse {
         System.out.println("------------END DATA----------");
     }
 
+    /**
+     * 
+     * Checks if the Response is cacheable.
+     * 
+     * @return true - it can be cached, false otherwise.
+     */
     public boolean isCacheAble() {
         return (isCacheAble && isText);
     }
     
+    /**
+     * 
+     * This method will grab the
+     * stored data.
+     * 
+     * @return String - data
+     */
     public String getData() {
         return data.toString();
     }
-    
     public int getMaxAgeCache() {
         return maxAge;
     }
@@ -295,18 +358,46 @@ public class HTTPResponse {
         return maxStale;
     }
     
+    /**
+     * 
+     * Method used to verify if the
+     * Content-Type is of type image/*
+     * 
+     * @return true - is an image, false otherwise
+     */
     public boolean isImage() {
         return image;
     }
     
+    /**
+     * 
+     * Method used to check if the Content-Type
+     * is allowed by our Config File specifications.
+     * 
+     * @return true - is allowed, false otherwise
+     */
     public boolean isInValidContent() {
         return inValidContent;
     }
     
+    /**
+     * 
+     * This method will retrieve the HttpURLConnection
+     * to the host.
+     * 
+     * @return
+     */
     public HttpURLConnection getHttpUrlConnection() {
         return conn;
     }
     
+    /**
+     * 
+     * This method will check if the
+     * Content-Type is of type text/*
+     * 
+     * @return true - if so, false otherwise
+     */
     public boolean isText() {
         return isText;
     }

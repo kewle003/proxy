@@ -9,19 +9,56 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
 
+/**
+ * 
+ * This class handles everything to do with
+ * an HTTP request from the client browser.
+ * 
+ * @author mark
+ *
+ */
 public class HTTPRequest {
 
+    //The client sockets InputStream
     private InputStream istream;
+    
+    //A handle on our client socket
     private Socket socket;
+    
+    //The data from an HTTP request
     private StringBuffer dataBuf;
+    
+    //A handle on the Host header field value
     private String host;
+    
+    //The port number for the requested server
     private int port;
+    
+    //HTTP1.0/1.1
     private String protocol;
+    
+    //Handle on the requested URL
     private String uri;
+    
+    //Handle on GET/POST/HEAD
     private String method;
+    
+    //The value from the Referrer header
     private String referer;
+    
+    //A handle on the dissAllowed image/extensions
     List<String> dissAllowedMimes;
     
+    //Boolean value to check if only-if-cached is specified
+    private boolean onlyIfCached = false;
+    
+    /**
+     * 
+     * Enum that handles the image/extensions
+     * 
+     * @author mark
+     *
+     */
     public enum MIME_TYPE {
         fif,
         x_icon,
@@ -50,6 +87,13 @@ public class HTTPRequest {
         
     }
     
+    /**
+     * 
+     * Default constructor. This will take in a
+     * client socket and grab it's InputStream.
+     * 
+     * @param socket - socket to the client browser
+     */
     public HTTPRequest(Socket socket) {
         this.socket = socket;
         try {
@@ -61,6 +105,13 @@ public class HTTPRequest {
         parseData(istream);
     }
 
+    /**
+     * 
+     * This method will parse an HTTP Request that
+     * was sent from the browser.
+     * 
+     * @param inputStream
+     */
     private void parseData(InputStream inputStream) {
         BufferedReader inLine = new BufferedReader(new InputStreamReader(istream));
         String rawData = new String("");
@@ -68,13 +119,20 @@ public class HTTPRequest {
             rawData = inLine.readLine();
             if (rawData == null)
                 return;
+            // Parse the first request line
             parseRequestLine(rawData);
             while (rawData.length() > 0) {
+                //Host: line?
                 if (rawData.contains("Host")) {
                     parseHost(rawData);
                 }
+                //Referer: line?
                 if (rawData.contains("Referer")) {
                     parseReferer(rawData);
+                }
+                //Cache-Control line?
+                if (rawData.contains("only-if-cached")) {
+                    onlyIfCached = true;
                 }
                 dataBuf.append(rawData + "\r\n");
                 rawData = inLine.readLine();
@@ -90,6 +148,13 @@ public class HTTPRequest {
     }
     
 
+    /**
+     * 
+     * This method will parse the request-line which
+     * is the first line in an HTTP Request.
+     * 
+     * @param rawData
+     */
     private void parseRequestLine(String rawData) {
         StringTokenizer st = new StringTokenizer(rawData);
         try {
@@ -101,6 +166,12 @@ public class HTTPRequest {
             
     }
 
+    /**
+     * 
+     * This method will parse the Host: header field.
+     * 
+     * @param rawData
+     */
     private void parseHost(String rawData) {
         StringTokenizer st = new StringTokenizer(rawData, ": ");
         if (st.nextToken().equals("Host")) {
@@ -117,49 +188,27 @@ public class HTTPRequest {
             }
         }
     }
-
-    public String getData() {
-        return dataBuf.toString();
-    }
     
-    public int getPort() {
-        return port;
-    }
-    
-    public String getHost() {
-        return host;
-    }
-    
-    public String getMethod() {
-        return method;
-    }
-    
-    public String getURI() {
-        return uri;
-    }
-    
-    public String getProtocol() {
-        return protocol;
-    }
-    
-    public String getReferer() {
-        return referer;
-    }
-    
+    /**
+     * 
+     * This will parse the Referer: header field.
+     * 
+     * @param data
+     */
     private void parseReferer(String data) {
         StringTokenizer st = new StringTokenizer(data);
         st.nextToken(); /* Ignore Referer*/
         referer = st.nextToken();
     }
     
-    public Socket getClientSocket() {
-        return socket;
-    }
-    
-    public List<String> getDissAllowedMIME() {
-        return dissAllowedMimes;
-    }
-    
+    /**
+     * 
+     * This method will set the disallowed types from
+     * the Content-Type: image/extension from an HTTP Response.
+     * The disallowed times are from the ConfigFile.
+     * 
+     * @param list
+     */
     public void setDissAllowedMIME(List<String> list) {
         dissAllowedMimes = new ArrayList<String>();
       //If there is nothing here => there is nothing to block
@@ -258,6 +307,44 @@ public class HTTPRequest {
         }
     }
     
-   
+    public String getData() {
+        return dataBuf.toString();
+    }
+    
+    public int getPort() {
+        return port;
+    }
+    
+    public String getHost() {
+        return host;
+    }
+    
+    public String getMethod() {
+        return method;
+    }
+    
+    public String getURI() {
+        return uri;
+    }
+    
+    public String getProtocol() {
+        return protocol;
+    }
+    
+    public String getReferer() {
+        return referer;
+    }
+      
+    public Socket getClientSocket() {
+        return socket;
+    }
+    
+    public List<String> getDissAllowedMIME() {
+        return dissAllowedMimes;
+    }
+    
+    public boolean onlyIfCacheSet() {
+        return onlyIfCached;
+    }
 
 }
