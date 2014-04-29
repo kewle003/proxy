@@ -70,9 +70,10 @@ public class ProxyThread extends Thread {
     public synchronized void run() {  
        if (clientSocket.isConnected()) {
            try {
+               System.out.println("Thread read!");
                //Create a new HTTPRequest object
                HTTPRequest httpReq = new HTTPRequest(clientSocket);
-               
+               //logger.info(httpReq.getHost());
                //Verify a valid URL was asked for
                if (httpReq.getURI() == null) {
                    return;
@@ -109,7 +110,7 @@ public class ProxyThread extends Thread {
                    } else {
                        //Can we Cache the Response?
                        if (httpResp.isCacheAble()) {
-                           //Does it already exist?
+                           //Does it already exist? Furthermore, is only-if-cache not set?
                            if (cache.containsKey(httpReq.getHost()) && !httpReq.onlyIfCacheSet()) {
                                Cache cacheToCheck = cache.get(httpReq.getHost());
                                //If so has it expired?
@@ -164,6 +165,9 @@ public class ProxyThread extends Thread {
                        } else {
                            //logger.info(httpReq.getHost()+"::contacted orgin server");
                            //If we reached here, we have an uncacheable object
+                           //Check if we wish to grab from cache if response takes to long
+                           if (httpReq.onlyIfCacheSet())
+                               httpResp.getHttpUrlConnection().setReadTimeout(5000);
                            if (httpResp.isText())
                                writeResponse(httpResp.getData().getBytes(), httpReq.getClientSocket().getOutputStream(), httpReq.onlyIfCacheSet(), httpReq.getHost());
                            else

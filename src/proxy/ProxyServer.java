@@ -37,9 +37,18 @@ public class ProxyServer {
      * @param portNo - the port that our proxy server runs on
      * @param proxyCacheDir - the ProxyServerCache directory
      */
-    public ProxyServer (String configfilePath, int portNo, final File proxyCacheDir) {
+    public ProxyServer (String configfilePath, int portNo) {
 
         //Add the thread that waits for the program to be killed to delete ProxyServerCache
+      //Create our ProxyServerCache directory
+        final File proxyCacheDir = new File(CWD + "/ProxyServerCache");
+        if (!proxyCacheDir.exists()) {
+            logger.info("Creating Directory: " +proxyCacheDir.toString());
+            proxyCacheDir.mkdir();
+        } else {
+            logger.info("Directory exists whyyyyyy");
+        }
+        
         FileHandler fileHandler;
         Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
             //If shutdownHook called, delete ProxyServerCache
@@ -113,21 +122,10 @@ public class ProxyServer {
 
         int portNo = Integer.parseInt(args[0]);
         
-        //Create our ProxyServerCache directory
-        final File f = new File(CWD + "/ProxyServerCache");
-        if (!f.exists()) {
-            logger.info("Creating Directory: " +f.toString());
-            f.mkdir();
-        } else {
-            logger.info("Directory exists whyyyyyy");
-        }
-        
-        
-        
         if (OS.indexOf("win") >= 0) {
-            new ProxyServer(CWD + "\\src\\proxy\\config.txt", portNo, f);
+            new ProxyServer(CWD + "\\src\\proxy\\config.txt", portNo);
         } else {
-            new ProxyServer(CWD + "/src/proxy/config.txt", portNo, f);
+            new ProxyServer(CWD + "/src/proxy/config.txt", portNo);
         } 
         
         
