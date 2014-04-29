@@ -51,6 +51,11 @@ public class HTTPRequest {
     
     //Boolean value to check if only-if-cached is specified
     private boolean onlyIfCached = false;
+
+    //Boolean value to check if Cookie header existed
+    private boolean cookie = false;
+    
+    private String cookieData;
     
     /**
      * 
@@ -134,6 +139,11 @@ public class HTTPRequest {
                 if (rawData.contains("only-if-cached")) {
                     onlyIfCached = true;
                 }
+                if (rawData.contains("Cookie")) {
+                    parseCookie(rawData);
+                    cookie  = true;
+                }
+                //System.out.println(rawData);
                 dataBuf.append(rawData + "\r\n");
                 rawData = inLine.readLine();
             }
@@ -147,6 +157,23 @@ public class HTTPRequest {
         dataBuf.append("\r\n");
     }
     
+
+    /**
+     * 
+     * 
+     * 
+     * @param rawData
+     */
+    private void parseCookie(String rawData) {
+        StringTokenizer st = new StringTokenizer(rawData);
+        st.nextToken(); /* get rid of cookie header */
+        StringBuilder cookieBuilder = new StringBuilder("");
+        while (st.hasMoreTokens()) {
+            cookieBuilder.append(st.nextToken());
+        }
+        cookieData = new String(cookieBuilder.toString());
+        
+    }
 
     /**
      * 
@@ -345,6 +372,14 @@ public class HTTPRequest {
     
     public boolean onlyIfCacheSet() {
         return onlyIfCached;
+    }
+    
+    public boolean isCookieSet() {
+        return cookie;
+    }
+    
+    public String getCookieData() {
+        return cookieData;
     }
 
 }

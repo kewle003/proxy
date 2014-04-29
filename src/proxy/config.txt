@@ -30,13 +30,6 @@ www.microsoft.com     image/jpg image/gif
 
 www.sco.com              image/*
 
+https://www.facebook.com/    *
 
-#images.google.com   image/*
-
-#upload.wikimedia.org  image/*
-
-www.cs.umn.edu  image/*
-
-#www.google-analytics.com    image/gif
-
-#www.umn.edu    
+www.umn.edu image/*

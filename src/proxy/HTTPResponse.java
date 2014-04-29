@@ -87,7 +87,7 @@ public class HTTPResponse {
             boolean chunked = false;
             isCacheAble = false;
             
-            if (httpReq.getPort() == 443) {
+            if (httpReq.getPort() == 443 || httpReq.getURI().contains("https")) {
                 https = true;
             } 
             
@@ -97,7 +97,14 @@ public class HTTPResponse {
                 conn = (HttpURLConnection) urlObj.openConnection();
                 conn.setRequestMethod(httpReq.getMethod());
                 conn.addRequestProperty("Connection", "close"); /* Professor Tripathi said to work with this */
-
+                
+                if (httpReq.isCookieSet()) {
+                    if (httpReq.getCookieData() != null) {
+                        System.out.println(httpReq.getCookieData());
+                        conn.addRequestProperty("Set-Cookie", httpReq.getCookieData());
+                    }
+                }
+                
                 //Verify that the image/extension is valid
                 if (conn.getHeaderField("Content-Type") != null) {
                     String contentType = conn.getHeaderField("Content-Type");
@@ -131,13 +138,15 @@ public class HTTPResponse {
                 }
                 
                 //Uncomment for debugging
-                //printHeaderValues(conn.getHeaderFields());
+                printHeaderValues(conn.getHeaderFields());
                 
                 
                 //If POST set the DoOutput to true
-                if (httpReq.getMethod().equalsIgnoreCase("POST")) {
-                    conn.setDoOutput(true);
-                }
+               // if (httpReq.getMethod().equalsIgnoreCase("POST")) {
+                 //   String cookies = conn.getHeaderField("Set-Cookie");
+                   // System.out.println(cookies);
+                   // conn.setDoOutput(true);
+                //}
                 
                 int responseCode = conn.getResponseCode();
                 //Check if we need to redirect
@@ -165,6 +174,10 @@ public class HTTPResponse {
                     conn.addRequestProperty("Connection", "close");
                     conn.addRequestProperty("Referer", httpReq.getURI());
                     System.out.println("REDIRECTED:" +redirectUrl);
+                    
+                    if (redirectUrl.contains("https")) {
+                        https = true;
+                    }
                     
                 } 
                 
@@ -229,9 +242,7 @@ public class HTTPResponse {
      * @param contentType
      */
     private void validateContentType(String contentType) {
-        System.out.println();
         for (String contentVal : httpReq.getDissAllowedMIME()) {
-            System.out.print(contentVal+ " ");
             if (contentVal.equals("star")) {
                 inValidContent = true;
                 return;
@@ -239,7 +250,6 @@ public class HTTPResponse {
                 inValidContent = true;
                 return;
             }
-            System.out.println();
         }
     }
 

@@ -73,11 +73,14 @@ public class ProxyThread extends Thread {
                System.out.println("Thread read!");
                //Create a new HTTPRequest object
                HTTPRequest httpReq = new HTTPRequest(clientSocket);
-               //logger.info(httpReq.getHost());
+
                //Verify a valid URL was asked for
                if (httpReq.getURI() == null) {
                    return;
                }
+               
+               System.out.println("Host:" +httpReq.getHost());
+               System.out.println("URI:" +httpReq.getURI());
                
                //Set the disAllowed MIME types for the Request.
                httpReq.setDissAllowedMIME(ProxyServer.getConfigFile().getDissallowedDomains().get(httpReq.getHost()));
@@ -94,8 +97,9 @@ public class ProxyThread extends Thread {
                    
                    //Do we have a valid status code?
                    if (httpResp.getHttpUrlConnection().getResponseCode() > 400) {
-                       writeResponse(getErrorMessage(httpResp.getHttpUrlConnection().getResponseMessage()), httpReq.getClientSocket().getOutputStream(), httpReq.onlyIfCacheSet(), httpReq.getHost());
+                       writeResponse(getErrorMessage("HTTP/1.1 " + httpResp.getHttpUrlConnection().getResponseCode()+ " "+ httpResp.getHttpUrlConnection().getResponseMessage()), httpReq.getClientSocket().getOutputStream(), httpReq.onlyIfCacheSet(), httpReq.getHost());
                        httpReq.getClientSocket().close();
+                       httpResp.getHttpUrlConnection().disconnect();
                        return;
                    }
                    
@@ -109,9 +113,9 @@ public class ProxyThread extends Thread {
                        }
                    } else {
                        //Can we Cache the Response?
-                       if (httpResp.isCacheAble()) {
+                       if (httpResp.isCacheAble() || httpReq.onlyIfCacheSet()) {
                            //Does it already exist? Furthermore, is only-if-cache not set?
-                           if (cache.containsKey(httpReq.getHost()) && !httpReq.onlyIfCacheSet()) {
+                           if (cache.containsKey(httpReq.getHost())) {
                                Cache cacheToCheck = cache.get(httpReq.getHost());
                                //If so has it expired?
                                if (cacheToCheck.isExpired()) {
@@ -144,6 +148,13 @@ public class ProxyThread extends Thread {
                                System.out.println("Cache doesnt not exist: " +httpReq.getHost());
                                Cache newCache = null;
                                
+                               if (httpReq.onlyIfCacheSet()) {
+                                   writeResponse(getErrorMessage("HTTP/1.1 504 Gateway Timeout"),httpReq.getClientSocket().getOutputStream(), httpReq.onlyIfCacheSet(), httpReq.getHost());
+                                   httpReq.getClientSocket().close();
+                                   httpResp.getHttpUrlConnection().disconnect();
+                                   return;
+                               }
+                               
                                //Set max-age and max-stale
                                if (httpResp.getMaxAgeCache() > 0) {
                                    if (httpResp.getMaxStaleCache() > 0) {
@@ -156,7 +167,7 @@ public class ProxyThread extends Thread {
                                    } else {
                                        newCache = new Cache(0, 0, httpReq.getHost());
                                    }
-                               }                               
+                               }       
                                newCache.writeData(httpResp.getData(), logger);
                                //Create a brand new Cache
                                cache.put(httpReq.getHost(), newCache);
@@ -166,8 +177,6 @@ public class ProxyThread extends Thread {
                            //logger.info(httpReq.getHost()+"::contacted orgin server");
                            //If we reached here, we have an uncacheable object
                            //Check if we wish to grab from cache if response takes to long
-                           if (httpReq.onlyIfCacheSet())
-                               httpResp.getHttpUrlConnection().setReadTimeout(5000);
                            if (httpResp.isText())
                                writeResponse(httpResp.getData().getBytes(), httpReq.getClientSocket().getOutputStream(), httpReq.onlyIfCacheSet(), httpReq.getHost());
                            else
@@ -263,27 +272,6 @@ public class ProxyThread extends Thread {
             out.flush();
             in.close();
             out.close();
-        } catch(SocketTimeoutException e) {
-            try {
-                out.close();
-                in.close();
-                if (onlyIfCache) {
-                    if (cache.containsKey(hostName)) {  
-                        writeResponseFromCache(cache.get(hostName).getFilePath(), ostream, hostName);
-                    } else {
-                        ostream.write(getErrorMessage("HTTP/1.1 504 Gateway Timeout\r\n"));
-                        ostream.flush();
-                        ostream.close();
-                    }
-                } else {
-                    ostream.write(getErrorMessage("HTTP/1.1 504 Gateway Timeout\r\n"));
-                    ostream.flush();
-                    ostream.close();
-                }
-            } catch (IOException e1) {
-                e1.printStackTrace();
-            }
-            
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -310,28 +298,7 @@ public class ProxyThread extends Thread {
             out.flush();
             out.close();
             istream.close();
-        } catch(SocketTimeoutException e) {
-            try {
-                out.close();
-                istream.close();
-                if (onlyIfCached) {
-                    if (cache.containsKey(hostName)) {  
-                        writeResponseFromCache(cache.get(hostName).getFilePath(), ostream, hostName);
-                    } else {
-                        ostream.write(getErrorMessage("HTTP/1.1 504 Gateway Timeout\r\n"));
-                        ostream.flush();
-                        ostream.close();
-                    }
-                } else {
-                    ostream.write(getErrorMessage("HTTP/1.1 504 Gateway Timeout\r\n"));
-                    ostream.flush();
-                    ostream.close();
-                }
-            } catch (IOException e1) {
-                e1.printStackTrace();
-            }
-            
-        }catch (IOException e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
          
@@ -389,7 +356,7 @@ public class ProxyThread extends Thread {
      */
     private byte[] getErrorMessage(String responseMessage) {
         String data = "<html><head><meta meta http-equiv=\"content-type\" content=\"text/html; "
-                + "charset=ISO-8859-1\"></head><body>Error Occured!</body></html>";
+                + "charset=ISO-8859-1\"></head><body>Error Occured or Forbidden Content!</body></html>";
         StringBuilder errScreen = new StringBuilder("");
         errScreen.append(responseMessage+"\r\n");
         errScreen.append("Content-Type: text/html\r\n");
