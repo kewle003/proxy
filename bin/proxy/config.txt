@@ -32,4 +32,4 @@ www.sco.com              image/*
 
 https://www.facebook.com/    *
 
-www.umn.edu image/*
+#www.umn.edu image/*

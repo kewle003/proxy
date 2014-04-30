@@ -4,7 +4,10 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.StringReader;
 import java.net.Socket;
+import java.net.URL;
+import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
@@ -54,6 +57,10 @@ public class HTTPRequest {
 
     //Boolean value to check if Cookie header existed
     private boolean cookie = false;
+    
+    private String urlParameters;
+    
+    private boolean urlParametersSet;
     
     private String cookieData;
     
@@ -118,7 +125,13 @@ public class HTTPRequest {
      * @param inputStream
      */
     private void parseData(InputStream inputStream) {
-        BufferedReader inLine = new BufferedReader(new InputStreamReader(istream));
+        BufferedReader inLine = null;
+        try {
+            inLine = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+        } catch (IOException e1) {
+            // TODO Auto-generated catch block
+            e1.printStackTrace();
+        }
         String rawData = new String("");
         try {
             rawData = inLine.readLine();
@@ -126,8 +139,69 @@ public class HTTPRequest {
                 return;
             // Parse the first request line
             parseRequestLine(rawData);
-            while (rawData.length() > 0) {
-                //Host: line?
+            //URL u = new URL(uri);
+            //URLConnection conn = uri.openConnection();
+            //System.out.println(u.getQuery());
+            if (method.equals("GET")) {
+                while (rawData.length() > 0) {
+                    //Host: line?
+                    if (rawData.contains("Host")) {
+                        parseHost(rawData);
+                    }
+                    //Referer: line?
+                    if (rawData.contains("Referer")) {
+                        parseReferer(rawData);
+                    }
+                    //Cache-Control line?
+                    if (rawData.contains("only-if-cached")) {
+                        onlyIfCached = true;
+                    }
+                    if (rawData.contains("Cookie")) {
+                        parseCookie(rawData);
+                        cookie  = true;
+                    }
+                    //System.out.println(rawData);
+                    dataBuf.append(rawData + "\r\n");
+                    rawData = inLine.readLine();
+                }
+                dataBuf.append("\r\n");
+            } else {
+                char[] buffer = new char[8192];
+                int count = 1;
+               // StringBuilder s = new StringBuilder("");
+                while (inLine.ready()) {
+                    count = inLine.read(buffer, 0, 8192);
+                    if (count > 0) {
+                        //System.out.println("In Loop");
+                        dataBuf.append(buffer, 0, count);
+                    } else
+                        break;
+                    
+                }
+                parsePostParameters(dataBuf.toString());
+                //System.out.println("Out of while loop");
+                //System.out.println(dataBuf.toString());
+                
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            return;
+        } catch (NullPointerException e) {
+            e.printStackTrace();
+            return;
+        }
+       // dataBuf.append("\r\n");
+    }
+    
+
+    private void parsePostParameters(String string) {
+        BufferedReader inLine = new BufferedReader(new StringReader(string));
+        String rawData = new String("");
+        //System.out.println("**********HEADERS*********");
+        int length = 0;
+        try {
+            while ((rawData = inLine.readLine()) != null) {
+              //Host: line?
                 if (rawData.contains("Host")) {
                     parseHost(rawData);
                 }
@@ -143,20 +217,27 @@ public class HTTPRequest {
                     parseCookie(rawData);
                     cookie  = true;
                 }
+                if (rawData.contains("Content-Length")) {
+                    StringTokenizer st = new StringTokenizer(rawData);
+                    st.nextToken(); //Ignore Content-Length;
+                    length = Integer.parseInt(st.nextToken());
+                }
+                if (length>0) {
+                    if (rawData.length() == length) {
+                        urlParameters = rawData;
+                        urlParametersSet = true;
+                        //System.out.println(rawData);
+                    }
+                }
                 //System.out.println(rawData);
-                dataBuf.append(rawData + "\r\n");
-                rawData = inLine.readLine();
             }
         } catch (IOException e) {
+            // TODO Auto-generated catch block
             e.printStackTrace();
-            return;
-        } catch (NullPointerException e) {
-            e.printStackTrace();
-            return;
         }
-        dataBuf.append("\r\n");
+        //System.out.println("***********END HEADERS**********");
+       // System.out.println(length);
     }
-    
 
     /**
      * 
@@ -380,6 +461,14 @@ public class HTTPRequest {
     
     public String getCookieData() {
         return cookieData;
+    }
+    
+    public String getUrlParameters() {
+        return urlParameters;
+    }
+    
+    public boolean isUrlParametersSet() {
+        return urlParametersSet;
     }
 
 }

@@ -70,17 +70,19 @@ public class ProxyThread extends Thread {
     public synchronized void run() {  
        if (clientSocket.isConnected()) {
            try {
-               System.out.println("Thread read!");
+               //System.out.println("Thread read!");
                //Create a new HTTPRequest object
                HTTPRequest httpReq = new HTTPRequest(clientSocket);
-
+               //System.out.println("Out of httpReq");
+               //System.out.println(""+httpReq.getMethod()+ " " +httpReq.getURI()+ " " +httpReq.getProtocol());
+             //  System.out.println("*********RESPONSE HEADERS********");
+               //System.out.println(httpReq.getData());
+               //System.out.println("**********END RESPONSE***********");
                //Verify a valid URL was asked for
                if (httpReq.getURI() == null) {
                    return;
                }
                
-               System.out.println("Host:" +httpReq.getHost());
-               System.out.println("URI:" +httpReq.getURI());
                
                //Set the disAllowed MIME types for the Request.
                httpReq.setDissAllowedMIME(ProxyServer.getConfigFile().getDissallowedDomains().get(httpReq.getHost()));

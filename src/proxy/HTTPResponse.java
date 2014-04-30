@@ -1,14 +1,20 @@
 package proxy;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLConnection;
+import java.net.URLEncoder;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -57,6 +63,8 @@ public class HTTPResponse {
     
     //A handle on our HTTPRequest object
     private HTTPRequest httpReq;
+    
+    private static HashMap<String, String> cookies = new HashMap<String, String>();
 
     /**
      * 
@@ -81,7 +89,11 @@ public class HTTPResponse {
     public void parseResponse(HTTPRequest httpReqs) {
         try {
             httpReq = httpReqs;
+           // if (httpReq.getMethod().equals("POST")) {
+                //Htt
+            //}
             URL urlObj = new URL(httpReq.getURI());
+            
             boolean https = false;
             boolean redirect = false;
             boolean chunked = false;
@@ -97,13 +109,32 @@ public class HTTPResponse {
                 conn = (HttpURLConnection) urlObj.openConnection();
                 conn.setRequestMethod(httpReq.getMethod());
                 conn.addRequestProperty("Connection", "close"); /* Professor Tripathi said to work with this */
+                //conn.addRequestProperty("Set-Cookie", "ROLE=Owner; Max-age=10");
+
                 
-                if (httpReq.isCookieSet()) {
+                if (conn.getRequestMethod().equals("POST")) {
+                    System.out.println("POST!!!!!");
+                    conn.setDoInput(true);
+                    conn.setDoOutput(true);
+                    if (cookies.containsKey(httpReq.getHost()))  {
+                        conn.setRequestProperty("Cookie", "ROLE=Visitor; Max-age=10");
+                    }
+                    OutputStream os = conn.getOutputStream();
+                    BufferedWriter writer = new BufferedWriter(
+                            new OutputStreamWriter(os, "UTF-8"));
+                    writer.write(httpReq.getUrlParameters());
+                    writer.flush();
+                    writer.close();
+                    os.close();
+                    
+                }
+                
+               /* if (httpReq.isCookieSet()) {
                     if (httpReq.getCookieData() != null) {
                         System.out.println(httpReq.getCookieData());
                         conn.addRequestProperty("Set-Cookie", httpReq.getCookieData());
                     }
-                }
+                }*/
                 
                 //Verify that the image/extension is valid
                 if (conn.getHeaderField("Content-Type") != null) {
@@ -134,19 +165,19 @@ public class HTTPResponse {
                 if (conn.getHeaderField("Transfer-Encoding") != null) {
                     String value = conn.getHeaderField("Transfer-Encoding");
                     if (value.equalsIgnoreCase("chunked"));
-                    chunked = true;
+                        chunked = true;
                 }
                 
                 //Uncomment for debugging
-                printHeaderValues(conn.getHeaderFields());
+                //printHeaderValues(conn.getHeaderFields());
                 
+                if (conn.getHeaderField("Set-Cookie") != null) {
+                   if (!cookies.containsKey(httpReq.getHost())) {
+                       String val = conn.getHeaderField("Set-Cookie");
+                       cookies.put(httpReq.getHost(), val);
+                   }
+                }
                 
-                //If POST set the DoOutput to true
-               // if (httpReq.getMethod().equalsIgnoreCase("POST")) {
-                 //   String cookies = conn.getHeaderField("Set-Cookie");
-                   // System.out.println(cookies);
-                   // conn.setDoOutput(true);
-                //}
                 
                 int responseCode = conn.getResponseCode();
                 //Check if we need to redirect
@@ -162,28 +193,29 @@ public class HTTPResponse {
                 if (redirect) {
                     //Grab the redirection url
                     String redirectUrl = conn.getHeaderField("Location");
-                    
+                    if (redirectUrl.contains("https")) {
+                        System.out.println("https!!!");
+                        https = true;
+                    }
                     //Grab the cookies if any
                     String cookies = conn.getHeaderField("Set-Cookie");
                     
                     //Open a new URL connection
-                    conn = (HttpURLConnection) new URL(redirectUrl).openConnection();
+                    if (https)
+                        conn = (HttpsURLConnection) new URL(redirectUrl).openConnection();
+                    else
+                        conn = (HttpURLConnection) new URL(redirectUrl).openConnection();
                     conn.setRequestProperty("Cookie", cookies);
                     conn.setRequestProperty("Accept-Language", "en-US,en;q=0.8");
                     conn.setRequestProperty("User-Agent", "Mozilla");
                     conn.addRequestProperty("Connection", "close");
                     conn.addRequestProperty("Referer", httpReq.getURI());
-                    System.out.println("REDIRECTED:" +redirectUrl);
-                    
-                    if (redirectUrl.contains("https")) {
-                        https = true;
-                    }
-                    
+                    System.out.println("REDIRECTED:" +redirectUrl);      
                 } 
                 
                 //Do we have a valid response?
                 if (conn.getResponseCode() < 300) {
-                    if (conn.getContentType().contains("text/")) {
+                    if (conn.getContentType().contains("text/html")) {
                         isText = true;
                         if (!chunked) {                            
                             conn.connect();
@@ -191,8 +223,14 @@ public class HTTPResponse {
                             BufferedReader inLine = new BufferedReader(new InputStreamReader(conn.getInputStream()));
                             StringBuffer init = new StringBuffer("");
                             String inputLine;
+                            printHeaderValues(conn.getHeaderFields());
                             Pattern headReg = Pattern.compile("<\\s*head\\s*>");
-                            while ((inputLine = inLine.readLine()) != null) {
+                            if (conn.getHeaderField("Set-Cookie") != null) {
+                                System.out.println("COOOOOOOOOOOOKKKKKKKKKIIIIIIIIIEEEEEEEE");
+                                init.append(conn.getHeaderField("Set-Cookie"));
+                            }
+                            while (inLine.ready()) {
+                                inputLine = inLine.readLine();
                                 Matcher m = headReg.matcher(inputLine);
                                 //Check if <head> is in the string, if so set the <base> tag href
                                 if (m.find()) {
@@ -205,6 +243,12 @@ public class HTTPResponse {
                         } else {
                             conn.connect();
                             ByteArrayOutputStream sink = new ByteArrayOutputStream();
+                            if (conn.getHeaderField("Set-Cookie") != null) {
+                                System.out.println("COOOOOOOOOOOOKKKKKKKKKIIIIIIIIIEEEEEEEE");
+                              //  httpReq.getClientSocket().getOutputStream().write(conn.getHeaderField("Set-Cookie").getBytes());
+                                //sink.write(("Cookie: "+conn.getHeaderField("Set-Cookie")).getBytes());
+                                //sink.write(conn.getHeaderField("Content-Type").getBytes());
+                            }
                             //Write the chunked data
                             writeChunked(conn.getInputStream(), sink);  
                             data = new StringBuilder(new String(sink.toByteArray(),"UTF-8"));
@@ -215,7 +259,7 @@ public class HTTPResponse {
                                 data = new StringBuilder(data.toString().replaceFirst("<\\s*head\\s*>", "<head><base href = \"" +httpReq.getURI()+ "\"/>"));
                             }
                         }
-                        conn.disconnect();
+                        //conn.disconnect();
                     } else {
                         isText = false;
                     }
