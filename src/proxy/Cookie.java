@@ -19,6 +19,8 @@ public class Cookie {
     
     private StringBuilder value;
     
+    private boolean noMaxAge = false;
+    
     public Cookie(String data) {
         value = new StringBuilder("");
         StringTokenizer st = new StringTokenizer(data);
@@ -29,6 +31,10 @@ public class Cookie {
                 parseMaxAge(val);
             }
         }
+        
+        if (!value.toString().contains("Max-Age")) {
+            noMaxAge = true;
+        }
     }
     
     private void parseMaxAge(String val) {
@@ -38,6 +44,8 @@ public class Cookie {
     }
 
     public boolean cookieExpired() {
+        if (noMaxAge)
+            return false;
         long checker = System.currentTimeMillis();
         if (checker > checkAge) {
             return true;
