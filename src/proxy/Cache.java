@@ -1,12 +1,7 @@
 package proxy;
 
-
-import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.logging.Logger;
@@ -15,21 +10,28 @@ import java.util.logging.Logger;
  * 
  * This class handles a Cache object.
  * It will hold onto the data of the cache
- * and the age of the cache.
+ * and the age of the cache. It handles all
+ * Caching.
  * 
  * @author mark
  *
  */
 public class Cache {
     
-    
     //The expiration date
     private String hostName;
+    
+    //The max-age Cache-Control value
     private long maxAge;
+    
+    //The max-stale Cache-Control value
     private long maxStale;
+    
+    //The cache file name
     private String fileName;
+    
+    //The path ProxyServer/host/fileName
     private String filePath;
-    private int BUF_SIZE = 8321;
     
     /**
      * 
@@ -52,23 +54,35 @@ public class Cache {
         this.hostName = hostName;
     }
     
-    public void setMaxAge(long newMaxAge) {
-        maxAge = newMaxAge;
-    }
-    
-    public void setMaxStale(long newMaxStale) {
-        maxStale = newMaxStale;
-    }
-    
-    
+    /**
+     * 
+     * Retrieves the max-age
+     * header value.
+     * 
+     * @return long - max-age value
+     */
     public long getMaxAge() {
         return maxAge;
     }
     
+    /**
+     * 
+     * Retrieves the max-stale
+     * header value.
+     * 
+     * @return long - max-stale value
+     */
     public long getMaxStale() {
         return maxStale;
     }
     
+    /**
+     * 
+     * This method will fetch the
+     * path to the Cached file.
+     * 
+     * @return - String filePath to the Cached object
+     */
     public String getFilePath() {
         return filePath;
     }
@@ -99,41 +113,6 @@ public class Cache {
     
     /**
      * 
-     * Same as above but writes rawData.
-     * Currently not in use
-     * 
-     * @param istream
-     * @param logger
-     */
-    public void writeData(InputStream istream, Logger logger) {
-        try {
-            logger.info(hostName+"::"+filePath);
-            BufferedOutputStream writer = new BufferedOutputStream(new FileOutputStream(filePath));
-            //BufferedReader inLine = new BufferedReader(new InputStreamReader(inputStream));
-            byte[] buffer = new byte[BUF_SIZE];
-            int count;
-            
-            while ((count = istream.read(buffer, 0, BUF_SIZE )) > -1) {
-                writer.write(buffer, 0, count);
-            }
-            writer.flush();
-            writer.close();
-            istream.close();
-            //inLine.close();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-        
-    }
-    
-    
-    /**
-     * 
      * This method checks if the cache data
      * has expired. It does so by checking
      * the max-age against the current time. Furthermore
@@ -157,10 +136,4 @@ public class Cache {
         }
         return true;
     }
-
-    
-
-    
-    
-
 }

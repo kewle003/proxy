@@ -2,6 +2,17 @@ package proxy;
 
 import java.util.StringTokenizer;
 
+/**
+ * 
+ * This class handles storing a Cookie. It will
+ * store the Set-Cookie header value from an HTTP
+ * Response. Furthermore, it will store the age of the
+ * cookie in milliseconds. If the Cookie has Expired it 
+ * you should delete it.
+ * 
+ * @author mark
+ *
+ */
 public class Cookie {
     
     private long checkAge;

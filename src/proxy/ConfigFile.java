@@ -29,7 +29,7 @@ public class ConfigFile {
      * all the disallowed domains. It will popuate
      * the HashMap of domains.
      * 
-     * @param filename
+     * @param filename - the path to the config file
      */
     public ConfigFile(String filename) {
         domains = new HashMap<String,List<String>>();
@@ -80,10 +80,12 @@ public class ConfigFile {
     
     
     /**
+     * 
      * This returns the HashMap of the disallowed domains.
      * This will be useful when checking if the domain exists
      * and if so what we wish to block from it.
-     * @return
+     * 
+     * @return - HashMap<String, List<String>> - Key - the Host, Value - Disallowed MIME types
      */
     public HashMap<String, List<String>> getDissallowedDomains() {
         return domains;

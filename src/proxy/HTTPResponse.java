@@ -27,7 +27,9 @@ import javax.net.ssl.HttpsURLConnection;
 /**
  * 
  * This class handles everything to do with  an
- * HTTP Response for our Proxy Server.
+ * HTTP Response. This class will verify Content-Type,
+ * Check the GET/POST requests. Store and validate Cookie
+ * objects. Handle Redirection and store data.
  * 
  * @author mark
  *
@@ -53,8 +55,11 @@ public class HTTPResponse {
     //Boolean value to check if Content-Type is allowed by Proxy
     private boolean inValidContent = false;
     
-    //Boolean value to check if Cont-Type is type text/extension
+    //Boolean value to check if Content-Type is type text/extension
     private boolean isText = false;
+    
+    //Boolean value to check if Content-Type is chunked.
+    private boolean chunked = false;
     
     //A handle on an HttpURLConnection object
     private HttpURLConnection conn;
@@ -62,6 +67,7 @@ public class HTTPResponse {
     //A handle on our HTTPRequest object
     private HTTPRequest httpReq;
     
+    //Used for storing cookies dynamically like a Web Browser
     private static HashMap<String, Cookie> cookies = new HashMap<String, Cookie>();
 
     /**
@@ -80,18 +86,21 @@ public class HTTPResponse {
      * This method will parse the HTTP Response received by
      * the server based on the HTTP Request that the client
      * browser sends. It will check for valid content, cache
-     * controls, response codes, as well as redirections.
+     * controls, response codes, as well as redirections. 
+     * HTTPRequest must be instantiated and populated before
+     * calling this method.
      * 
-     * @param httpReqs
+     * @param httpReqs - HTTPRequest object
      */
     public void parseResponse(HTTPRequest httpReqs) {
         try {
             httpReq = httpReqs;
-            URL urlObj = new URL(httpReq.getURI());
+            if (httpReq == null)
+                throw new IOException();
             
+            URL urlObj = new URL(httpReq.getURI());
             boolean https = false;
             boolean redirect = false;
-            boolean chunked = false;
             isCacheAble = false;
             
             if (httpReq.getPort() == 443 || httpReq.getURI().contains("https")) {
@@ -105,7 +114,7 @@ public class HTTPResponse {
                 conn.setRequestMethod(httpReq.getMethod());
                 conn.addRequestProperty("Connection", "close"); /* Professor Tripathi said to work with this */
                 //conn.addRequestProperty("Set-Cookie", "ROLE=Owner; Max-age=10");
-
+                conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.95 Safari/537.11");
                 
                 if (conn.getRequestMethod().equals("POST")) {
                     conn.setDoInput(true);
@@ -121,7 +130,8 @@ public class HTTPResponse {
                     OutputStream os = conn.getOutputStream();
                     BufferedWriter writer = new BufferedWriter(
                             new OutputStreamWriter(os, "UTF-8"));
-                    writer.write(httpReq.getUrlParameters());
+                    if (httpReq.isUrlParametersSet())
+                        writer.write(httpReq.getUrlParameters());
                     writer.flush();
                     writer.close();
                     os.close();
@@ -199,14 +209,14 @@ public class HTTPResponse {
                         conn = (HttpURLConnection) new URL(redirectUrl).openConnection();
                     conn.setRequestProperty("Cookie", cookies);
                     conn.setRequestProperty("Accept-Language", "en-US,en;q=0.8");
-                    conn.setRequestProperty("User-Agent", "Mozilla");
+                    conn.setRequestProperty("User-Agent", "Mozilla");                   
                     conn.addRequestProperty("Connection", "close");
                     conn.addRequestProperty("Referer", httpReq.getURI());
                     System.out.println("REDIRECTED:" +redirectUrl);      
                 } 
                 
                 //Do we have a valid response?
-                if (conn.getResponseCode() < 300) {
+                if (conn.getResponseCode() < 400) {
                     if (conn.getContentType().contains("text/html")) {
                         isText = true;
                         if (!chunked) {                            
@@ -240,8 +250,8 @@ public class HTTPResponse {
                             if (m.find()) {
                                 data = new StringBuilder(data.toString().replaceFirst("<\\s*head\\s*>", "<head><base href = \"" +httpReq.getURI()+ "\"/>"));
                             }
+                            return;
                         }
-                        //conn.disconnect();
                     } else {
                         isText = false;
                     }
@@ -276,10 +286,10 @@ public class HTTPResponse {
      * type. If it is a type that we wish to block
      * we must notify the HTTPResponse object.
      * 
-     * @param contentType
+     * @param contentType - The value of Content-Type header
      */
     private void validateContentType(String contentType) {
-        for (String contentVal : httpReq.getDissAllowedMIME()) {
+        for (String contentVal : httpReq.getDisAllowedMIME()) {
             if (contentVal.equals("star")) {
                 inValidContent = true;
                 return;
@@ -295,7 +305,7 @@ public class HTTPResponse {
      * This method will take the Cache-Control header field
      * and will parse out max-age and max-stale.
      * 
-     * @param headerField
+     * @param headerField - The value of Cache-Control
      */
     private void parseCacheHeaderVal(String headerField) {
         StringTokenizer st = new StringTokenizer(headerField);
@@ -319,8 +329,9 @@ public class HTTPResponse {
      * server's InputStream to the client's ByteArrayOutputStream buffer.
      * This is used to store data if it is chunked.
      * 
-     * @param istream
-     * @param ostream
+     * @param istream - The HtppURLConnection's InputStream
+     * @param ostream - The soon to be Client's OutputStream
+     * 
      * @throws Exception
      */
     private void writeChunked(InputStream istream, ByteArrayOutputStream ostream) throws Exception {
@@ -342,7 +353,7 @@ public class HTTPResponse {
      * the Response headers and print out the values
      * in an Array.
      * 
-     * @param headerFields
+     * @param headerFields - Map<String, List<String>> returned from HttpURLConnection.getHeaderFields()
      */
     public void printHeaderValues(Map<String, List<String>> headerFields) {
         System.out.println("------------HEADER DATA----------");
@@ -392,15 +403,32 @@ public class HTTPResponse {
      * This method will grab the
      * stored data.
      * 
-     * @return String - data
+     * @return String - data read from HttpURLConnection
      */
     public String getData() {
         return data.toString();
     }
+    
+    /**
+     * 
+     * This method will retrieve the
+     * max-age value set by the
+     * Cache-Control header.
+     * 
+     * @return int - max-age
+     */
     public int getMaxAgeCache() {
         return maxAge;
     }
     
+    /**
+     * 
+     * This method will retrieve
+     * the max-stale age set by
+     * Cache-Control header.
+     * 
+     * @return int - max-stale
+     */
     public int getMaxStaleCache() {
         return maxStale;
     }
@@ -432,7 +460,7 @@ public class HTTPResponse {
      * This method will retrieve the HttpURLConnection
      * to the host.
      * 
-     * @return
+     * @return HttpURLConnection instance
      */
     public HttpURLConnection getHttpUrlConnection() {
         return conn;
@@ -447,6 +475,17 @@ public class HTTPResponse {
      */
     public boolean isText() {
         return isText;
+    }
+
+    /**
+     * 
+     * Method used to check if if Content-Type
+     * is set to chunked.
+     * 
+     * @return true - if so, false otherwise
+     */
+    public boolean isChunked() {
+        return chunked;
     }
 
 }

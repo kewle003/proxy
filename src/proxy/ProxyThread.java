@@ -15,7 +15,9 @@ import java.util.logging.Logger;
 /**
  * 
  * This class handles handshaking between
- * a web browser and a web server.
+ * a web browser and a web server. The class
+ * is responsible for building Requests, Responses, and
+ * Cache control.
  * 
  * @author mark
  *
@@ -40,8 +42,11 @@ public class ProxyThread extends Thread {
     //Used for debugging
     public static int THREAD_COUNT = 0;
     
-    //Handle on our host
-    private String host;
+    //Handle on our Request object
+    private HTTPRequest httpReq;
+    
+    //Handle on our response object
+    private HTTPResponse httpResp;
 
     /**
      * 
@@ -67,31 +72,32 @@ public class ProxyThread extends Thread {
      * 
      */
     public synchronized void run() {  
+        
        if (clientSocket.isConnected()) {
            try {
                //Create a new HTTPRequest object
-               HTTPRequest httpReq = new HTTPRequest(clientSocket);
+               httpReq = new HTTPRequest(clientSocket);
                //Verify a valid URL was asked for
                if (httpReq.getURI() == null) {
                    return;
                }
                             
                //Set the disAllowed MIME types for the Request.
-               httpReq.setDissAllowedMIME(ProxyServer.getConfigFile().getDissallowedDomains().get(httpReq.getHost()));
+               httpReq.setDisAllowedMIME(ProxyServer.getConfigFile().getDissallowedDomains().get(httpReq.getHost()));
                
                //Verify if we have a blocked site
-               if (httpReq.getDissAllowedMIME().contains("all")) {
+               if (httpReq.getDisAllowedMIME().contains("all")) {
                    writeResponse(getBlockedSiteScreen(httpReq.getURI()), httpReq.getClientSocket().getOutputStream());
                    httpReq.getClientSocket().close();
                } else {
                    //Create a new HTTPResponse object
-                   HTTPResponse httpResp = new HTTPResponse();
+                   httpResp = new HTTPResponse();
                    //Parse the Response
                    httpResp.parseResponse(httpReq);
                    
                    //Do we have a valid status code?
                    if (httpResp.getHttpUrlConnection().getResponseCode() > 400) {
-                       writeResponse(getErrorMessage("HTTP/1.1 " + httpResp.getHttpUrlConnection().getResponseCode()+ " "+ httpResp.getHttpUrlConnection().getResponseMessage()), httpReq.getClientSocket().getOutputStream());
+                       writeResponse(getErrorMessageWithResponse("HTTP/1.1 " + httpResp.getHttpUrlConnection().getResponseCode()+ " "+ httpResp.getHttpUrlConnection().getResponseMessage()), httpReq.getClientSocket().getOutputStream());
                        httpReq.getClientSocket().close();
                        httpResp.getHttpUrlConnection().disconnect();
                        return;
@@ -141,7 +147,7 @@ public class ProxyThread extends Thread {
                                Cache newCache = null;
                                
                                if (httpReq.onlyIfCacheSet()) {
-                                   writeResponse(getErrorMessage("HTTP/1.1 504 Gateway Timeout"),httpReq.getClientSocket().getOutputStream());
+                                   writeResponse(getErrorMessageWithResponse("HTTP/1.1 504 Gateway Timeout"),httpReq.getClientSocket().getOutputStream());
                                    httpReq.getClientSocket().close();
                                    httpResp.getHttpUrlConnection().disconnect();
                                    return;
@@ -175,19 +181,27 @@ public class ProxyThread extends Thread {
                                writeResponse(httpResp.getHttpUrlConnection().getInputStream(), httpReq.getClientSocket().getOutputStream());
                        }
                    }
-                   //Close up our sockets.
-                   httpReq.getClientSocket().close();
-                   httpResp.getHttpUrlConnection().disconnect();
+                   
                }
 
            } catch (IOException e) {
                logger.info("Exception occured!! Writing Error Message");
                try {
                 writeResponse(getErrorMessage("Exception occured!! Writing Error Message"), clientSocket.getOutputStream());
-            } catch (IOException e1) {
-                logger.info("Exception Occured! Tried to write errormessage but Pipe Broken!");
-            }
-           } 
+               } catch (IOException e1) {
+                   logger.info("Exception Occured! Tried to write errormessage but Pipe Broken!");
+               }
+            } finally {
+                //Close up our sockets.
+                if (httpReq != null)
+                    try {
+                        httpReq.getClientSocket().close();
+                    } catch (IOException e1) {
+                    }
+                if (httpResp != null)
+                   if (httpResp.getHttpUrlConnection() != null)
+                       httpResp.getHttpUrlConnection().disconnect();
+            } 
        }
        
     } 
@@ -278,8 +292,8 @@ public class ProxyThread extends Thread {
      * 
      * This will display a blocked site.
      * 
-     * @param uri
-     * @return
+     * @param uri - The URL that caused the block
+     * @return byte[] - Returns the data in a byte array format
      */
     public byte[] getBlockedSiteScreen(String uri) {
         String data = "<html><head><meta http-equiv=\"content-type\" content=\"text/html; "
@@ -299,9 +313,11 @@ public class ProxyThread extends Thread {
     /**
      * 
      * This may be used to block sites that contain
-     * a dissallowed MIME type.
+     * a disallowed MIME type or Error's that occurred
+     * from the ProxyServer
      * 
-     * @return
+     * @param msg - String the error message to display
+     * @return byte[] - Returns the data in a byte array format
      */
     public byte[] getErrorMessage(String msg) {
         String data = "<html><head><meta meta http-equiv=\"content-type\" content=\"text/html; "
@@ -318,13 +334,13 @@ public class ProxyThread extends Thread {
     
     /**
      * 
-     * This will display the error from an 
-     * HttpURLConnection requestLine.
+     * This will display the error with a 
+     * response code and message
      * 
-     * @param responseMessage
-     * @return
+     * @param responseMessage - String like HTTP/1.1 403 Access Forbidden
+     * @return byte[] - Returns the data in a byte array format
      */
-    private byte[] getErrorMessage(String responseMessage, String msg) {
+    private byte[] getErrorMessageWithResponse(String responseMessage) {
         String data = "<html><head><meta meta http-equiv=\"content-type\" content=\"text/html; "
                 + "charset=ISO-8859-1\"></head><body>Error Occured or Forbidden Content!</body></html>";
         StringBuilder errScreen = new StringBuilder("");

@@ -6,17 +6,15 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.net.Socket;
-import java.net.URL;
-import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
-import java.util.logging.Logger;
-
 /**
  * 
  * This class handles everything to do with
- * an HTTP request from the client browser.
+ * an HTTP request from the client browser. It will
+ * build the data and check the methods being used.
+ * Currently it supports GET and POST methods.
  * 
  * @author mark
  *
@@ -55,15 +53,12 @@ public class HTTPRequest {
     
     //Boolean value to check if only-if-cached is specified
     private boolean onlyIfCached = false;
-
-    //Boolean value to check if Cookie header existed
-    private boolean cookie = false;
     
+    //String data that holds onto url params: parm1=val1&...parmn=valn
     private String urlParameters;
     
+    //Boolean to check that url parameters exist
     private boolean urlParametersSet;
-    
-    private String cookieData;
     
     /**
      * 
@@ -126,23 +121,14 @@ public class HTTPRequest {
      * @param inputStream
      */
     private void parseData(InputStream inputStream) {
-        BufferedReader inLine = null;
-        try {
-            inLine = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-        } catch (IOException e1) {
-            // TODO Auto-generated catch block
-            e1.printStackTrace();
-        }
         String rawData = new String("");
         try {
+            BufferedReader inLine = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             rawData = inLine.readLine();
             if (rawData == null)
                 return;
             // Parse the first request line
             parseRequestLine(rawData);
-            //URL u = new URL(uri);
-            //URLConnection conn = uri.openConnection();
-            //System.out.println(u.getQuery());
             if (method.equals("GET")) {
                 while (rawData.length() > 0) {
                     //Host: line?
@@ -157,10 +143,6 @@ public class HTTPRequest {
                     if (rawData.contains("only-if-cached")) {
                         onlyIfCached = true;
                     }
-                    if (rawData.contains("Cookie")) {
-                        parseCookie(rawData);
-                        cookie  = true;
-                    }
                     //System.out.println(rawData);
                     dataBuf.append(rawData + "\r\n");
                     rawData = inLine.readLine();
@@ -169,20 +151,15 @@ public class HTTPRequest {
             } else {
                 char[] buffer = new char[8192];
                 int count = 1;
-               // StringBuilder s = new StringBuilder("");
                 while (inLine.ready()) {
                     count = inLine.read(buffer, 0, 8192);
                     if (count > 0) {
-                        //System.out.println("In Loop");
                         dataBuf.append(buffer, 0, count);
                     } else
                         break;
                     
                 }
                 parsePostParameters(dataBuf.toString());
-                //System.out.println("Out of while loop");
-                //System.out.println(dataBuf.toString());
-                
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -191,12 +168,18 @@ public class HTTPRequest {
             e.printStackTrace();
             return;
         }
-       // dataBuf.append("\r\n");
     }
     
 
-    private void parsePostParameters(String string) {
-        BufferedReader inLine = new BufferedReader(new StringReader(string));
+    /**
+     * 
+     * This method will parse the Request
+     * of a POST method. 
+     *
+     * @param requestedData - String - represents the data
+     */
+    private void parsePostParameters(String requestedData) {
+        BufferedReader inLine = new BufferedReader(new StringReader(requestedData));
         String rawData = new String("");
         int length = 0;
         try {
@@ -213,10 +196,6 @@ public class HTTPRequest {
                 if (rawData.contains("only-if-cached")) {
                     onlyIfCached = true;
                 }
-                if (rawData.contains("Cookie")) {
-                    parseCookie(rawData);
-                    cookie  = true;
-                }
                 if (rawData.contains("Content-Length")) {
                     StringTokenizer st = new StringTokenizer(rawData);
                     st.nextToken(); //Ignore Content-Length;
@@ -232,23 +211,6 @@ public class HTTPRequest {
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
-
-    /**
-     * 
-     * 
-     * 
-     * @param rawData
-     */
-    private void parseCookie(String rawData) {
-        StringTokenizer st = new StringTokenizer(rawData);
-        st.nextToken(); /* get rid of cookie header */
-        StringBuilder cookieBuilder = new StringBuilder("");
-        while (st.hasMoreTokens()) {
-            cookieBuilder.append(st.nextToken());
-        }
-        cookieData = new String(cookieBuilder.toString());
-        
     }
 
     /**
@@ -312,7 +274,7 @@ public class HTTPRequest {
      * 
      * @param list
      */
-    public void setDissAllowedMIME(List<String> list) {
+    public void setDisAllowedMIME(List<String> list) {
         dissAllowedMimes = new ArrayList<String>();
       //If there is nothing here => there is nothing to block
         if (list == null) {
@@ -410,58 +372,143 @@ public class HTTPRequest {
         }
     }
     
+    /**
+     * 
+     * This method will retrieve the entire
+     * HTTP request headers.
+     * 
+     * @return String - header values
+     */
     public String getData() {
         return dataBuf.toString();
     }
     
+    /**
+     * 
+     * This method will retrieve the
+     * port that the Host is talking on.
+     * 
+     * @return int - port number
+     */
     public int getPort() {
         return port;
     }
     
+    /**
+     * 
+     * This method will retrieve the
+     * Host in the Host header field
+     * value.
+     * 
+     * @return String - www.host.com
+     */
     public String getHost() {
         return host;
     }
     
+    /**
+     * 
+     * This method will return the
+     * method that the client is requesting
+     * 
+     * GET/POST
+     * 
+     * @return String - GET/POST
+     */
     public String getMethod() {
         return method;
     }
     
+    /**
+     * 
+     * This method will return the client's
+     * requested url.
+     * 
+     * @return String - http://www.example.com
+     */
     public String getURI() {
         return uri;
     }
     
+    /**
+     * 
+     * This method will return the HTTP
+     * protocol the client has requested.
+     * 
+     * @return String - HTTP/1.1/0
+     */
     public String getProtocol() {
         return protocol;
     }
     
+    /**
+     * 
+     * This method will retrieve the
+     * Referrer who issued the request if
+     * there is one.
+     * 
+     * @return String - http://www.referer.com
+     */
     public String getReferer() {
         return referer;
     }
       
+    /**
+     * 
+     * This method will retrieve the socket of
+     * the web browser that sent the request.
+     * Only to be used for low-level reads/writes.
+     * 
+     * @return Socket - client's socket.
+     */
     public Socket getClientSocket() {
         return socket;
     }
     
-    public List<String> getDissAllowedMIME() {
+    /**
+     * 
+     * This method will retrieve a list
+     * of the disallowed MIME types specified
+     * by the Requested Host.
+     * 
+     * @return List<String> - image/extensions
+     */
+    public List<String> getDisAllowedMIME() {
         return dissAllowedMimes;
     }
     
+    /**
+     * 
+     * This method will return
+     * true if only-if-cache was
+     * specified in the Cache-Control
+     * header.
+     * 
+     * @return true - only-if-cache specified, false otherwise.
+     */
     public boolean onlyIfCacheSet() {
         return onlyIfCached;
     }
     
-    public boolean isCookieSet() {
-        return cookie;
-    }
-    
-    public String getCookieData() {
-        return cookieData;
-    }
-    
+    /**
+     * 
+     * This method will return
+     * the parameters of the
+     * Query string.
+     * 
+     * @return String - param1=val1&...&paramN=valN
+     */
     public String getUrlParameters() {
         return urlParameters;
     }
     
+    /**
+     * 
+     * This method checks if
+     * there even was a Query String.
+     * 
+     * @return true - there was a Query String, false otherwise.
+     */
     public boolean isUrlParametersSet() {
         return urlParametersSet;
     }

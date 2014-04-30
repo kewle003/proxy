@@ -7,6 +7,16 @@ import java.util.logging.FileHandler;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
 
+/**
+ * 
+ * This is our main Engine to our Proxy Server.
+ * One needs to instantiate this in their main Method
+ * in order to use the Server. One must provide a configuration
+ * file that is located in the same directory as ProxyServer.java.
+ * 
+ * @author mark
+ *
+ */
 public class ProxyServer {
     
     private static String CWD = System.getProperty("user.dir");
@@ -35,7 +45,6 @@ public class ProxyServer {
      * 
      * @param configfilePath - The path to our config file
      * @param portNo - the port that our proxy server runs on
-     * @param proxyCacheDir - the ProxyServerCache directory
      */
     public ProxyServer (String configfilePath, int portNo) {
 
@@ -105,7 +114,7 @@ public class ProxyServer {
      * Static method used to retrieve the configFile.
      * I know this is bad programming practice.
      * 
-     * @return
+     * @return ConfigFile - The handle on our ConfigFile
      */
     protected static ConfigFile getConfigFile() {
         return configFile;
@@ -139,7 +148,7 @@ public class ProxyServer {
      * us from deleting directories if there is other
      * files within the directory.
      * 
-     * @param file
+     * @param file - The directory to delete
      * @throws IOException
      * @author mkyong - www.mykong.com
      */
