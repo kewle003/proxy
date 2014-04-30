@@ -11,8 +11,6 @@ import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.URLConnection;
-import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -64,7 +62,7 @@ public class HTTPResponse {
     //A handle on our HTTPRequest object
     private HTTPRequest httpReq;
     
-    private static HashMap<String, String> cookies = new HashMap<String, String>();
+    private static HashMap<String, Cookie> cookies = new HashMap<String, Cookie>();
 
     /**
      * 
@@ -89,9 +87,6 @@ public class HTTPResponse {
     public void parseResponse(HTTPRequest httpReqs) {
         try {
             httpReq = httpReqs;
-           // if (httpReq.getMethod().equals("POST")) {
-                //Htt
-            //}
             URL urlObj = new URL(httpReq.getURI());
             
             boolean https = false;
@@ -113,11 +108,15 @@ public class HTTPResponse {
 
                 
                 if (conn.getRequestMethod().equals("POST")) {
-                    System.out.println("POST!!!!!");
                     conn.setDoInput(true);
                     conn.setDoOutput(true);
                     if (cookies.containsKey(httpReq.getHost()))  {
-                        conn.setRequestProperty("Cookie", "ROLE=Visitor; Max-age=10");
+                        Cookie c = cookies.get(httpReq.getHost());
+                        if (!c.cookieExpired()) {
+                            conn.setRequestProperty("Cookie", c.toString());
+                        } else {
+                            cookies.remove(httpReqs.getHost());
+                        }
                     }
                     OutputStream os = conn.getOutputStream();
                     BufferedWriter writer = new BufferedWriter(
@@ -128,13 +127,6 @@ public class HTTPResponse {
                     os.close();
                     
                 }
-                
-               /* if (httpReq.isCookieSet()) {
-                    if (httpReq.getCookieData() != null) {
-                        System.out.println(httpReq.getCookieData());
-                        conn.addRequestProperty("Set-Cookie", httpReq.getCookieData());
-                    }
-                }*/
                 
                 //Verify that the image/extension is valid
                 if (conn.getHeaderField("Content-Type") != null) {
@@ -174,7 +166,7 @@ public class HTTPResponse {
                 if (conn.getHeaderField("Set-Cookie") != null) {
                    if (!cookies.containsKey(httpReq.getHost())) {
                        String val = conn.getHeaderField("Set-Cookie");
-                       cookies.put(httpReq.getHost(), val);
+                       cookies.put(httpReq.getHost(), new Cookie(val));
                    }
                 }
                 
@@ -223,12 +215,8 @@ public class HTTPResponse {
                             BufferedReader inLine = new BufferedReader(new InputStreamReader(conn.getInputStream()));
                             StringBuffer init = new StringBuffer("");
                             String inputLine;
-                            printHeaderValues(conn.getHeaderFields());
+                          //  printHeaderValues(conn.getHeaderFields());
                             Pattern headReg = Pattern.compile("<\\s*head\\s*>");
-                            if (conn.getHeaderField("Set-Cookie") != null) {
-                                System.out.println("COOOOOOOOOOOOKKKKKKKKKIIIIIIIIIEEEEEEEE");
-                                init.append(conn.getHeaderField("Set-Cookie"));
-                            }
                             while (inLine.ready()) {
                                 inputLine = inLine.readLine();
                                 Matcher m = headReg.matcher(inputLine);
@@ -243,12 +231,6 @@ public class HTTPResponse {
                         } else {
                             conn.connect();
                             ByteArrayOutputStream sink = new ByteArrayOutputStream();
-                            if (conn.getHeaderField("Set-Cookie") != null) {
-                                System.out.println("COOOOOOOOOOOOKKKKKKKKKIIIIIIIIIEEEEEEEE");
-                              //  httpReq.getClientSocket().getOutputStream().write(conn.getHeaderField("Set-Cookie").getBytes());
-                                //sink.write(("Cookie: "+conn.getHeaderField("Set-Cookie")).getBytes());
-                                //sink.write(conn.getHeaderField("Content-Type").getBytes());
-                            }
                             //Write the chunked data
                             writeChunked(conn.getInputStream(), sink);  
                             data = new StringBuilder(new String(sink.toByteArray(),"UTF-8"));
@@ -266,7 +248,18 @@ public class HTTPResponse {
                 }
             } else {
                 System.out.println("https!!!!!!!!!!!!");
-                HttpsURLConnection conn = (HttpsURLConnection) urlObj.openConnection();
+               // HttpsURLConnection conn = (HttpsURLConnection) urlObj.openConnection();
+                String val = "<html><head><meta meta http-equiv=\"content-type\" content=\"text/html; "
+                        + "charset=ISO-8859-1\"></head><body>HTTPS Not Supported!</body></html>";
+                StringBuilder errScreen = new StringBuilder("");
+                errScreen.append("HTTP/1.1 403 Forbidden\r\n");
+                errScreen.append("Content-Type: text/html\r\n");
+                errScreen.append("Content-Length: ");
+                errScreen.append(val.length());
+                errScreen.append("\r\n\r\n");
+                errScreen.append(val);
+                data = errScreen;
+                return;
             }
         } catch (MalformedURLException e) {
             e.printStackTrace();

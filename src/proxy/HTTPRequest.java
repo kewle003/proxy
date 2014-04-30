@@ -11,6 +11,7 @@ import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
+import java.util.logging.Logger;
 
 /**
  * 
@@ -197,7 +198,6 @@ public class HTTPRequest {
     private void parsePostParameters(String string) {
         BufferedReader inLine = new BufferedReader(new StringReader(string));
         String rawData = new String("");
-        //System.out.println("**********HEADERS*********");
         int length = 0;
         try {
             while ((rawData = inLine.readLine()) != null) {
@@ -226,17 +226,12 @@ public class HTTPRequest {
                     if (rawData.length() == length) {
                         urlParameters = rawData;
                         urlParametersSet = true;
-                        //System.out.println(rawData);
                     }
                 }
-                //System.out.println(rawData);
             }
         } catch (IOException e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
         }
-        //System.out.println("***********END HEADERS**********");
-       // System.out.println(length);
     }
 
     /**
