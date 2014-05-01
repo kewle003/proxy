@@ -69,7 +69,6 @@ public class ProxyThread extends Thread {
      * for debugging purposes.
      * 
      * @param clientSocket
-     * @param logger
      */
     public ProxyThread(Socket clientSocket) {
         super("ProxyThread");

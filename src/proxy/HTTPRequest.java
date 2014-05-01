@@ -49,7 +49,7 @@ public class HTTPRequest {
     private String referer;
     
     //A handle on the dissAllowed image/extensions
-    List<String> dissAllowedMimes;
+    List<String> disAllowedMimes;
     
     //Boolean value to check if only-if-cached is specified
     private boolean onlyIfCached = false;
@@ -305,99 +305,99 @@ public class HTTPRequest {
      * @param list - the List<String> of MIME types set in ConfigFile
      */
     public void setDisAllowedMIME(List<String> list) {
-        dissAllowedMimes = new ArrayList<String>();
+        disAllowedMimes = new ArrayList<String>();
       //If there is nothing here => there is nothing to block
         if (list == null) {
-            dissAllowedMimes.add(MIME_TYPE.none.toString().toLowerCase());
+            disAllowedMimes.add(MIME_TYPE.none.toString().toLowerCase());
             return;
         }
         
         
         if (list.contains("image/*")) {
-            dissAllowedMimes.add(MIME_TYPE.star.toString().toLowerCase());
+            disAllowedMimes.add(MIME_TYPE.star.toString().toLowerCase());
         } else if (list.size() == 0) {
-            dissAllowedMimes.add(MIME_TYPE.all.toString().toLowerCase());
+            disAllowedMimes.add(MIME_TYPE.all.toString().toLowerCase());
         } else if (list.contains("*")) {
-            dissAllowedMimes.add(MIME_TYPE.all.toString().toLowerCase());
+            disAllowedMimes.add(MIME_TYPE.all.toString().toLowerCase());
         } else {
             if (list.contains("image/jpeg") || list.contains("image/jpg")) {
-                dissAllowedMimes.add("image/" + MIME_TYPE.jpeg.toString().toLowerCase());
+                disAllowedMimes.add("image/" + MIME_TYPE.jpeg.toString().toLowerCase());
             }
             
             if (list.contains("image/bmp")) {
-                dissAllowedMimes.add("image/" + MIME_TYPE.bmp.toString().toLowerCase());
+                disAllowedMimes.add("image/" + MIME_TYPE.bmp.toString().toLowerCase());
             }
             
             if (list.contains("image/gif")) {
-                dissAllowedMimes.add("image/" + MIME_TYPE.gif.toString().toLowerCase());
+                disAllowedMimes.add("image/" + MIME_TYPE.gif.toString().toLowerCase());
             }
             
             if (list.contains("image/png")) {
-                dissAllowedMimes.add("image/" + MIME_TYPE.png.toString().toLowerCase());
+                disAllowedMimes.add("image/" + MIME_TYPE.png.toString().toLowerCase());
             }
             
             if (list.contains("image/fif")) {
-                dissAllowedMimes.add("image/" + MIME_TYPE.fif.toString().toLowerCase());
+                disAllowedMimes.add("image/" + MIME_TYPE.fif.toString().toLowerCase());
             }
             
             if (list.contains("image/x-icon")) {
-                dissAllowedMimes.add("image/" + MIME_TYPE.x_icon.toString().replaceAll("_", "-").toLowerCase());
+                disAllowedMimes.add("image/" + MIME_TYPE.x_icon.toString().replaceAll("_", "-").toLowerCase());
             }
 
             if (list.contains("image/ief")) {
-                dissAllowedMimes.add("image/" + MIME_TYPE.ief.toString().toLowerCase());
+                disAllowedMimes.add("image/" + MIME_TYPE.ief.toString().toLowerCase());
             }
             
             if (list.contains("image/ifs")) {
-                dissAllowedMimes.add("image/" + MIME_TYPE.ifs.toString().toLowerCase());
+                disAllowedMimes.add("image/" + MIME_TYPE.ifs.toString().toLowerCase());
             }
             
             if (list.contains("image/vnd")) {
-                dissAllowedMimes.add("image/" + MIME_TYPE.vnd.toString().toLowerCase());
+                disAllowedMimes.add("image/" + MIME_TYPE.vnd.toString().toLowerCase());
             }
             
             if (list.contains("image/wavelet")) {
-                dissAllowedMimes.add("image/" + MIME_TYPE.wavelet.toString().toLowerCase());
+                disAllowedMimes.add("image/" + MIME_TYPE.wavelet.toString().toLowerCase());
             }
             
             if (list.contains("image/x-photo-cd")) {
-                dissAllowedMimes.add("image/" + MIME_TYPE.x_photo_cd.toString().replaceAll("_", "-").toLowerCase());
+                disAllowedMimes.add("image/" + MIME_TYPE.x_photo_cd.toString().replaceAll("_", "-").toLowerCase());
             }
             
             if (list.contains("image/x-cmu-raster")) {
-                dissAllowedMimes.add("image/" + MIME_TYPE.x_cmu_raster.toString().replaceAll("_", "-").toLowerCase());
+                disAllowedMimes.add("image/" + MIME_TYPE.x_cmu_raster.toString().replaceAll("_", "-").toLowerCase());
             }
             
             if (list.contains("image/x-portable-anymap ")) {
-                dissAllowedMimes.add("image/" + MIME_TYPE.x_portable_anymap.toString().replaceAll("_", "-").toLowerCase());
+                disAllowedMimes.add("image/" + MIME_TYPE.x_portable_anymap.toString().replaceAll("_", "-").toLowerCase());
             }
             
             if (list.contains("image/x-portable-bitmap ")) {
-                dissAllowedMimes.add("image/" + MIME_TYPE.x_portable_bitmap.toString().replaceAll("_", "-").toLowerCase());
+                disAllowedMimes.add("image/" + MIME_TYPE.x_portable_bitmap.toString().replaceAll("_", "-").toLowerCase());
             }
             
             if (list.contains("image/x-portable-graymap")) {
-                dissAllowedMimes.add("image/" + MIME_TYPE.x_portable_graymap.toString().replaceAll("_", "-").toLowerCase());
+                disAllowedMimes.add("image/" + MIME_TYPE.x_portable_graymap.toString().replaceAll("_", "-").toLowerCase());
             }
             
             if (list.contains("image/x-portable-pixmap")) {
-                dissAllowedMimes.add("image/" + MIME_TYPE.x_portable_pixmap.toString().replaceAll("_", "-").toLowerCase());
+                disAllowedMimes.add("image/" + MIME_TYPE.x_portable_pixmap.toString().replaceAll("_", "-").toLowerCase());
             }
             
             if (list.contains("image/x-rgb")) {
-                dissAllowedMimes.add("image/" + MIME_TYPE.x_rgb.toString().replaceAll("_", "-").toLowerCase());
+                disAllowedMimes.add("image/" + MIME_TYPE.x_rgb.toString().replaceAll("_", "-").toLowerCase());
             }
             
             if (list.contains("image/x-xbitmap")) {
-                dissAllowedMimes.add("image/" + MIME_TYPE.x_xbitmap.toString().replaceAll("_", "-").toLowerCase());
+                disAllowedMimes.add("image/" + MIME_TYPE.x_xbitmap.toString().replaceAll("_", "-").toLowerCase());
             }
             
             if (list.contains("image/x-xpixmap")) {
-                dissAllowedMimes.add("image/" + MIME_TYPE.x_xpixmap.toString().replaceAll("_", "-").toLowerCase());
+                disAllowedMimes.add("image/" + MIME_TYPE.x_xpixmap.toString().replaceAll("_", "-").toLowerCase());
             }
             
             if (list.contains("image/x-xwindowdump")) {
-                dissAllowedMimes.add("image/" + MIME_TYPE.x_xwindowdump.toString().replace("_", "-").toLowerCase());
+                disAllowedMimes.add("image/" + MIME_TYPE.x_xwindowdump.toString().replace("_", "-").toLowerCase());
             }
         }
     }
@@ -504,7 +504,7 @@ public class HTTPRequest {
      * @return List<String> - image/extensions
      */
     public List<String> getDisAllowedMIME() {
-        return dissAllowedMimes;
+        return disAllowedMimes;
     }
     
     /**
