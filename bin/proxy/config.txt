@@ -37,3 +37,7 @@ www.sco.com              image/*
 #images.google.com image/*
 
 #www.google.com image/*
+
+www.cs.umn.edu  image/*
+
+www.cnn.com

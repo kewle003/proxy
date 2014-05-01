@@ -3,9 +3,7 @@ package proxy;
 import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
-import java.util.logging.FileHandler;
 import java.util.logging.Logger;
-import java.util.logging.SimpleFormatter;
 
 /**
  * 
@@ -22,6 +20,7 @@ public class ProxyServer {
     private static String CWD = System.getProperty("user.dir");
     private static String OS = System.getProperty("os.name").toLowerCase();
     private static Logger logger  = Logger.getLogger("MyLogger");
+    
     
     // Data Members: 
     /**
@@ -58,7 +57,7 @@ public class ProxyServer {
             logger.info("Directory exists whyyyyyy");
         }
         
-        FileHandler fileHandler;
+
         Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
             //If shutdownHook called, delete ProxyServerCache
             public void run() {
@@ -73,22 +72,13 @@ public class ProxyServer {
         try {
             //Out configuration file
             configFile =  new ConfigFile(configfilePath);
-            // This block configure the logger with handler and formatter
-            fileHandler = new FileHandler("LoggerFile");
-            logger.addHandler(fileHandler);
-            
-            SimpleFormatter formatter = new SimpleFormatter();
-            fileHandler.setFormatter(formatter);
 
             // the following statement is used to log any messages
             logger.config("yay!!!");
 
         } catch (SecurityException e) {
             e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
         }
-
         proxyPort = portNo;
 
         try {
@@ -102,7 +92,7 @@ public class ProxyServer {
         while (true) { 
             try {
                 //Create a client socket thread
-                new ProxyThread(proxySock.accept(), logger).start();
+                new ProxyThread(proxySock.accept()).start();
             } catch (IOException e) {
                 e.printStackTrace();
             }

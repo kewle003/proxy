@@ -1,5 +1,6 @@
 package proxy;
 
+import java.util.List;
 import java.util.StringTokenizer;
 
 /**
@@ -15,12 +16,22 @@ import java.util.StringTokenizer;
  */
 public class Cookie {
     
+    //Age we use to check against currentTime
     private long checkAge;
     
+    //The cookie data
     private StringBuilder value;
     
+    //If maxAge was not specified
     private boolean noMaxAge = false;
     
+    /**
+     * 
+     * Constructor for the Set-Cookie Response
+     * header if there is only one cookie.
+     * 
+     * @param data
+     */
     public Cookie(String data) {
         value = new StringBuilder("");
         StringTokenizer st = new StringTokenizer(data);
@@ -37,12 +48,34 @@ public class Cookie {
         }
     }
     
+    /**
+     * 
+     * Constructor for the Set-Cookie Response
+     * header if there is more than one cookie.
+     * 
+     * @param headerFieldValue - List<String> cookie data
+     */
+    public Cookie(List<String> headerFieldValue) {
+        value = new StringBuilder("");
+        for (String data : headerFieldValue) {
+            StringTokenizer st = new StringTokenizer(data);
+            value.append(st.nextToken());
+        }
+            
+    }
+
     private void parseMaxAge(String val) {
         StringTokenizer st = new StringTokenizer(val, "=");
         st.nextToken(); //Ignore Max-age
         checkAge = (Integer.parseInt(st.nextToken())*1000 + System.currentTimeMillis());
     }
-
+    
+    /**
+     * 
+     * Checks if the cookie has expired.
+     * 
+     * @return true - has expired, false otherwise
+     */
     public boolean cookieExpired() {
         if (noMaxAge)
             return false;
@@ -54,6 +87,11 @@ public class Cookie {
         }
     }
     
+    /**
+     * 
+     * Default toString()
+     * 
+     */
     public String toString() {
         return value.toString();
     }

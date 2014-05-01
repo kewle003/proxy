@@ -60,6 +60,12 @@ public class HTTPRequest {
     //Boolean to check that url parameters exist
     private boolean urlParametersSet;
     
+    //The cookie data
+    private StringBuilder cookieData;
+
+    //Boolean value to check if cookieData does exist
+    private boolean cookieDataExist;
+    
     /**
      * 
      * Enum that handles the image/extensions
@@ -143,6 +149,10 @@ public class HTTPRequest {
                     if (rawData.contains("only-if-cached")) {
                         onlyIfCached = true;
                     }
+                    if (rawData.contains("Cookie")) {
+                        cookieDataExist = true;
+                        parseCookieData(rawData);
+                    }
                     //System.out.println(rawData);
                     dataBuf.append(rawData + "\r\n");
                     rawData = inLine.readLine();
@@ -170,6 +180,22 @@ public class HTTPRequest {
         }
     }
     
+
+    /**
+     * 
+     * This method will parse the Cookie header
+     * field.
+     * 
+     * @param rawData - the Cookie header field data
+     */
+    private void parseCookieData(String rawData) {
+        cookieData = new StringBuilder("");
+        StringTokenizer st = new StringTokenizer(rawData);
+        st.nextToken();
+        while (st.hasMoreTokens()) {
+            cookieData.append(st.nextToken());
+        }
+    }
 
     /**
      * 
@@ -207,6 +233,10 @@ public class HTTPRequest {
                         urlParametersSet = true;
                     }
                 }
+                if (rawData.contains("Cookie")) {
+                    cookieDataExist = true;
+                    parseCookieData(rawData);
+                }
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -218,7 +248,7 @@ public class HTTPRequest {
      * This method will parse the request-line which
      * is the first line in an HTTP Request.
      * 
-     * @param rawData
+     * @param rawData - the Request header field data
      */
     private void parseRequestLine(String rawData) {
         StringTokenizer st = new StringTokenizer(rawData);
@@ -235,7 +265,7 @@ public class HTTPRequest {
      * 
      * This method will parse the Host: header field.
      * 
-     * @param rawData
+     * @param rawData - the Host header field data
      */
     private void parseHost(String rawData) {
         StringTokenizer st = new StringTokenizer(rawData, ": ");
@@ -256,9 +286,9 @@ public class HTTPRequest {
     
     /**
      * 
-     * This will parse the Referer: header field.
+     * This will parse the Referer header field.
      * 
-     * @param data
+     * @param data - the Referer header field data.
      */
     private void parseReferer(String data) {
         StringTokenizer st = new StringTokenizer(data);
@@ -272,7 +302,7 @@ public class HTTPRequest {
      * the Content-Type: image/extension from an HTTP Response.
      * The disallowed times are from the ConfigFile.
      * 
-     * @param list
+     * @param list - the List<String> of MIME types set in ConfigFile
      */
     public void setDisAllowedMIME(List<String> list) {
         dissAllowedMimes = new ArrayList<String>();
@@ -511,6 +541,28 @@ public class HTTPRequest {
      */
     public boolean isUrlParametersSet() {
         return urlParametersSet;
+    }
+    
+    /**
+     * 
+     * This method will grab the cookie data
+     * that was set by the Cookie request header.
+     * 
+     * @return String - cookie data
+     */
+    public String getCookieData() {
+        return cookieData.toString();
+    }
+    
+    /**
+     * 
+     * This method checks whether or not
+     * there was a Cookie header.
+     * 
+     * @return true - if it existed, false otherwise
+     */
+    public boolean hasCookieData() {
+        return cookieDataExist;
     }
 
 }

@@ -10,7 +10,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.util.HashMap;
+import java.util.logging.FileHandler;
 import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
 
 /**
  * 
@@ -34,7 +36,19 @@ public class ProxyThread extends Thread {
     private static HashMap<String, Cache> cache = new HashMap<String, Cache>();
     
     //A handle on our logger
-    private Logger logger;
+    private static Logger logger = Logger.getLogger("MyLogger");
+    static {
+        try {
+            FileHandler fileHandler = new FileHandler("loggerFile.txt");
+            SimpleFormatter formatter = new SimpleFormatter();
+            fileHandler.setFormatter(formatter);
+            logger.addHandler(fileHandler);
+        } catch (SecurityException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
     
     //Default buffer size
     private int BUF_SIZE = 8192;
@@ -47,7 +61,7 @@ public class ProxyThread extends Thread {
     
     //Handle on our response object
     private HTTPResponse httpResp;
-
+    
     /**
      * 
      * Default constructor that takes in the
@@ -57,10 +71,10 @@ public class ProxyThread extends Thread {
      * @param clientSocket
      * @param logger
      */
-    public ProxyThread(Socket clientSocket, Logger logger) {
+    public ProxyThread(Socket clientSocket) {
         super("ProxyThread");
         this.clientSocket = clientSocket;
-        this.logger = logger;
+        //this.logger = logger;
         THREAD_COUNT++;
 
     }
@@ -87,26 +101,32 @@ public class ProxyThread extends Thread {
                
                //Verify if we have a blocked site
                if (httpReq.getDisAllowedMIME().contains("all")) {
+                   logger.info(httpReq.getHost()+"::request for blocked site");
                    writeResponse(getBlockedSiteScreen(httpReq.getURI()), httpReq.getClientSocket().getOutputStream());
                    httpReq.getClientSocket().close();
                } else {
+                  // System.out.println(httpReq.getMethod()+ " " +httpReq.getURI()+ " " +httpReq.getProtocol());
+
                    //Create a new HTTPResponse object
                    httpResp = new HTTPResponse();
                    //Parse the Response
                    httpResp.parseResponse(httpReq);
                    
                    //Do we have a valid status code?
-                   if (httpResp.getHttpUrlConnection().getResponseCode() > 400) {
-                       writeResponse(getErrorMessageWithResponse("HTTP/1.1 " + httpResp.getHttpUrlConnection().getResponseCode()+ " "+ httpResp.getHttpUrlConnection().getResponseMessage()), httpReq.getClientSocket().getOutputStream());
-                       httpReq.getClientSocket().close();
-                       httpResp.getHttpUrlConnection().disconnect();
+                   if (httpResp.getHttpUrlConnection().getResponseCode() >= 400) {
+                       Socket s = new Socket(httpReq.getHost(), httpReq.getPort());
+                       s.getOutputStream().write(httpReq.getData().getBytes());
+                       writeResponse(s.getInputStream(), httpReq.getClientSocket().getOutputStream());
+                       s.close();
                        return;
                    }
+                   
                    
                    //Check if Content-Type is an image
                    if (httpResp.isImage()) {
                        //Check if Content-Type is valid
                        if (httpResp.isInValidContent()) {
+                           logger.info(httpReq.getHost()+"::requesting for bad content");
                            writeResponse(getErrorMessage("This image is not Allowed!"), httpReq.getClientSocket().getOutputStream());
                        } else {
                            writeResponse(httpResp.getHttpUrlConnection().getInputStream(), httpReq.getClientSocket().getOutputStream());
@@ -119,7 +139,7 @@ public class ProxyThread extends Thread {
                                Cache cacheToCheck = cache.get(httpReq.getHost());
                                //If so has it expired?
                                if (cacheToCheck.isExpired()) {
-                                   logger.info(""+httpReq.getHost()+"::expired cache");
+                                   logger.info(""+httpReq.getHost()+"::expired cache, rewriting cache");
                                    Cache newCache = null;
                                    //Set max-age and max-stale
                                    if (httpResp.getMaxAgeCache() > 0) {
@@ -139,14 +159,18 @@ public class ProxyThread extends Thread {
                                    cache.put(httpReq.getHost(), newCache);
                                    writeResponseFromCache(newCache.getFilePath(), httpReq.getClientSocket().getOutputStream(), httpReq.getHost());
                                } else {
+                                   if (httpReq.onlyIfCacheSet())
+                                       logger.info(httpReq.getHost()+"::only-if-cache specified pulling from cache");
                                    //Write the cache data
                                    writeResponseFromCache(cacheToCheck.getFilePath(), httpReq.getClientSocket().getOutputStream(), httpReq.getHost());
                                }
                            } else {
                                logger.info(httpReq.getHost()+"::attmpting to create cache");
+                               
                                Cache newCache = null;
                                
                                if (httpReq.onlyIfCacheSet()) {
+                                   logger.info(httpReq.getHost()+"::on-if-cache specified, no cache existed!");
                                    writeResponse(getErrorMessageWithResponse("HTTP/1.1 504 Gateway Timeout"),httpReq.getClientSocket().getOutputStream());
                                    httpReq.getClientSocket().close();
                                    httpResp.getHttpUrlConnection().disconnect();
@@ -205,7 +229,7 @@ public class ProxyThread extends Thread {
        }
        
     } 
-    
+
     /**
      * 
      * This will write a response from the Cached file
@@ -225,7 +249,6 @@ public class ProxyThread extends Thread {
                 out.write(buffer, 0, count);
             }
             out.flush();
-            out.close();
             reader.close();
         } catch (FileNotFoundException e) {
             e.printStackTrace();
@@ -254,8 +277,7 @@ public class ProxyThread extends Thread {
                 out.write(buffer, 0, count);
             }
             out.flush();
-            in.close();
-            out.close();
+            in.close();;
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -280,8 +302,6 @@ public class ProxyThread extends Thread {
                   out.write(buffer, 0, count); 
              }
             out.flush();
-            out.close();
-            istream.close();
         } catch (IOException e) {
             e.printStackTrace();
         }

@@ -21,7 +21,6 @@ import java.util.StringTokenizer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.net.ssl.HttpsURLConnection;
 
 
 /**
@@ -69,6 +68,7 @@ public class HTTPResponse {
     
     //Used for storing cookies dynamically like a Web Browser
     private static HashMap<String, Cookie> cookies = new HashMap<String, Cookie>();
+    
 
     /**
      * 
@@ -97,8 +97,11 @@ public class HTTPResponse {
             httpReq = httpReqs;
             if (httpReq == null)
                 throw new IOException();
-            
-            URL urlObj = new URL(httpReq.getURI());
+            URL urlObj = null;
+            if (httpReq.getURI().startsWith("http"))
+                urlObj = new URL(httpReq.getURI());
+            else
+                urlObj = new URL("http://"+httpReq.getURI());
             boolean https = false;
             boolean redirect = false;
             isCacheAble = false;
@@ -114,41 +117,60 @@ public class HTTPResponse {
                 conn.setRequestMethod(httpReq.getMethod());
                 conn.addRequestProperty("Connection", "close"); /* Professor Tripathi said to work with this */
                 //conn.addRequestProperty("Set-Cookie", "ROLE=Owner; Max-age=10");
-                conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.95 Safari/537.11");
+                conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:23.0) Gecko/20100101 Firefox/23.0");
                 
                 //Do we have a POST request?
                 if (conn.getRequestMethod().equals("POST")) {
-                    
                     //Make sure to let our server know we wish to push input
                     conn.setDoInput(true);
                     conn.setDoOutput(true);
                     //Do we already have a cookie?
                     if (cookies.containsKey(httpReq.getHost()))  {
                         Cookie c = cookies.get(httpReq.getHost());
-                        //Has it expired? if so remove it, else set it
-                        if (!c.cookieExpired()) {
+                        System.out.println(c.toString());
+                        if (httpReq.hasCookieData())
+                            conn.setRequestProperty("Cookie", c.toString() + "; " +httpReq.getCookieData());
+                        else
                             conn.setRequestProperty("Cookie", c.toString());
-                        } else {
-                            cookies.remove(httpReqs.getHost());
-                        }
                     }
+                    
                     //Write URL parameters if we have them
                     OutputStream os = conn.getOutputStream();
                     BufferedWriter writer = new BufferedWriter(
                             new OutputStreamWriter(os, "UTF-8"));
-                    if (httpReq.isUrlParametersSet())
+                    if (httpReq.isUrlParametersSet()) {
                         writer.write(httpReq.getUrlParameters());
+                    }
                     writer.flush();
                     writer.close();
                     os.close();
-                    
+                   
+                } else {
+                    //Check if we have a cookie to write
+                    if (cookies.containsKey(httpReq.getHost())) {
+                        Cookie c = cookies.get(httpReq.getHost());
+                        if (httpReq.hasCookieData())
+                            conn.setRequestProperty("Cookie", c.toString() +";"+ httpReq.getCookieData());
+                        else
+                            conn.setRequestProperty("Cookie", c.toString());
+                    } 
                 }
                 
+                //Do we have Set-Cookie in request header?
                 if (conn.getHeaderField("Set-Cookie") != null) {
+                    //Do we already have this cookie?
                     if (!cookies.containsKey(httpReq.getHost())) {
-                        String val = conn.getHeaderField("Set-Cookie");
-                        cookies.put(httpReq.getHost(), new Cookie(val));
+                        //Is there more than one cookie?
+                        if (conn.getHeaderFields().get("Set-Cookie") instanceof List) {
+                            List<String> headerFieldValue = conn.getHeaderFields().get("Set-Cookie");
+                            cookies.put(httpReq.getHost(), new Cookie(headerFieldValue));
+                        }
+                        else {
+                            String headerFieldValue = conn.getHeaderField("Set-Cookie");
+                            cookies.put(httpReq.getHost(), new Cookie(headerFieldValue));
+                        }
                     }
+                    //Ignore creating cookie
                  }
                 
                 int responseCode = conn.getResponseCode();
@@ -165,36 +187,21 @@ public class HTTPResponse {
                 if (redirect) {
                     //Grab the redirection url
                     String redirectUrl = conn.getHeaderField("Location");
-                    if (redirectUrl.contains("https")) {
-                        System.out.println("https!!!");
-                        https = true;
-                    }
+                    
                     //Grab the cookies if any
+                    String cookies = conn.getHeaderField("Set-Cookie");
                     
-                    
-                    //Open a new URL connection
-                  //  if (https)
-                    //    conn = (HttpsURLConnection) new URL(redirectUrl).openConnection();
-                    //else
-                     conn = (HttpURLConnection) new URL(redirectUrl).openConnection();
-                     if (cookies.containsKey(httpReq.getHost()))  {
-                         Cookie c = cookies.get(httpReq.getHost());
-                         //Has it expired? if so remove it, else set it
-                         if (!c.cookieExpired()) {
-                             conn.setRequestProperty("Cookie", c.toString());
-                         } else {
-                             cookies.remove(httpReqs.getHost());
-                         }
-                    }
+                    conn = (HttpURLConnection) new URL(redirectUrl).openConnection();
+                    conn.setRequestProperty("Cookie", cookies);
                     conn.setRequestProperty("Accept-Language", "en-US,en;q=0.8");
                     conn.setRequestProperty("User-Agent", "Mozilla");                   
                     conn.addRequestProperty("Connection", "close");
-                    //conn.addRequestProperty("Referer", httpReq.getURI());
+
                     System.out.println("REDIRECTED:" +redirectUrl);      
                 } 
                 
                 
-              //Verify that the image/extension is valid
+                //Verify that the image/extension is valid
                 if (conn.getHeaderField("Content-Type") != null) {
                     String contentType = conn.getHeaderField("Content-Type");
                     if (contentType.contains("image")) {
@@ -226,13 +233,9 @@ public class HTTPResponse {
                     if (value.equalsIgnoreCase("chunked"));
                         chunked = true;
                 }
-                
-                //Uncomment for debugging
-                //printHeaderValues(conn.getHeaderFields());
 
-                System.out.println(conn.getResponseCode());
                 //Do we have a valid response?
-                if (conn.getResponseCode() < 400) {
+                if (conn.getResponseCode() < 300) {
                     if (conn.getContentType().contains("text/html")) {
                         isText = true;
                         if (!chunked) { 
@@ -242,7 +245,6 @@ public class HTTPResponse {
                             BufferedReader inLine = new BufferedReader(new InputStreamReader(conn.getInputStream()));
                             StringBuffer init = new StringBuffer("");
                             String inputLine;
-                           // printHeaderValues(conn.getHeaderFields());
                             Pattern headReg = Pattern.compile("<\\s*head\\s*>");
                             while (inLine.ready()) {
                                 inputLine = inLine.readLine();
@@ -254,7 +256,6 @@ public class HTTPResponse {
                                 init.append(inputLine);
                             }                    
                             data = new StringBuilder(new String(init.toString().getBytes(), "UTF-8")); 
-                            //inLine.close();
                         } else {
                             conn.connect();
                             ByteArrayOutputStream sink = new ByteArrayOutputStream();
@@ -267,14 +268,16 @@ public class HTTPResponse {
                             if (m.find()) {
                                 data = new StringBuilder(data.toString().replaceFirst("<\\s*head\\s*>", "<head><base href = \"" +httpReq.getURI()+ "\"/>"));
                             }
+                            //Not a valid response, read from ServerSocket in ProxyThread
                             return;
                         }
                     } else {
                         isText = false;
                     }
+                } else {
+                    return;
                 }
             } else {
-                System.out.println("https!!!!!!!!!!!!");
                // HttpsURLConnection conn = (HttpsURLConnection) urlObj.openConnection();
                 String val = "<html><head><meta meta http-equiv=\"content-type\" content=\"text/html; "
                         + "charset=ISO-8859-1\"></head><body>HTTPS Not Supported!</body></html>";
@@ -390,7 +393,6 @@ public class HTTPResponse {
                 value.trim();
                 sb.append(value);
                 sb.append("");
-                //arguments.add(value);
             }
             StringTokenizer st = new StringTokenizer(sb.toString());
             while (st.hasMoreElements()) {
@@ -504,5 +506,5 @@ public class HTTPResponse {
     public boolean isChunked() {
         return chunked;
     }
-
+    
 }
