@@ -70,7 +70,7 @@ public class ProxyServer {
                     return;
                 }
                 String configFileToCheck = configText.getText();
-                Pattern p2 = Pattern.compile("[a-zA-Z]*.txt");
+                Pattern p2 = Pattern.compile("[a-zA-Z]*\\.txt");
                 Matcher m2 = p2.matcher(configFileToCheck);
                 //Verify we have a text file
                 if (!m2.find()) {

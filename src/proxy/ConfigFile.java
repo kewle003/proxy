@@ -34,6 +34,12 @@ public class ConfigFile {
     public ConfigFile(String filename) {
         domains = new HashMap<String,List<String>>();
         File f = new File(filename);
+        if (!f.exists())
+            try {
+                f.createNewFile();
+            } catch (IOException e1) {
+                e1.printStackTrace();
+            }
         String currentLine = new String();
         String domainName = new String();
         List<String> arguments;
