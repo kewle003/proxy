@@ -16,10 +16,9 @@ import java.util.logging.Logger;
  * @author mark
  *
  */
-public class ProxyServer {
+public class ProxyServerEngine extends Thread {
     
     private static String CWD = System.getProperty("user.dir");
-    private static String OS = System.getProperty("os.name").toLowerCase();
     private static Logger logger  = Logger.getLogger("MyLogger");
     
     
@@ -39,18 +38,25 @@ public class ProxyServer {
      */
     private static ConfigFile configFile;
     
+    private String configFilePath;
+    
+    public ProxyServerEngine(String configFilePath, int port) {
+        this.configFilePath = configFilePath;
+        proxyPort = port;
+    }
+    
     /**
      * 
-     * Default Constructor
+     * Our thread run function. This will set up the ProxyServer
+     * socket as well as accept all subsequent client request Sockets.
+     * This is a multi-threaded server.
      * 
-     * @param configfilePath - The path to our config file
-     * @param portNo - the port that our proxy server runs on
      */
-    public ProxyServer (String configfilePath, int portNo) {
+    public synchronized void run () {
 
         //Add the thread that waits for the program to be killed to delete ProxyServerCache
       //Create our ProxyServerCache directory
-        final File proxyCacheDir = new File(CWD + "/ProxyServerCache");
+        final File proxyCacheDir = new File(CWD+"/ProxyServerCache");
         if (!proxyCacheDir.exists()) {
             logger.info("Creating Directory: " +proxyCacheDir.toString());
             proxyCacheDir.mkdir();
@@ -72,7 +78,7 @@ public class ProxyServer {
 
         try {
             //Out configuration file
-            configFile =  new ConfigFile(configfilePath);
+            configFile =  new ConfigFile(configFilePath);
 
             // the following statement is used to log any messages
             logger.config("yay!!!");
@@ -80,7 +86,7 @@ public class ProxyServer {
         } catch (SecurityException e) {
             e.printStackTrace();
         }
-        proxyPort = portNo;
+        //proxyPort = portNo;
 
         try {
             //Bind the proxyServer socket
@@ -100,6 +106,7 @@ public class ProxyServer {
         } // end of while 
     } 
     
+    
     /**
      * 
      * Static method used to retrieve the configFile.
@@ -110,26 +117,6 @@ public class ProxyServer {
     protected static ConfigFile getConfigFile() {
         return configFile;
     }
-    
-    // main method 
-    public static void main(String args[]) throws IOException { 
-        // Read the config file name and the Proxy Port. 
-        // Do error checking. If no config file is specified, or if no Port is specified 
-        // then exit. 
-        if (args.length != 1) {
-            throw new IOException("Usage: ProxyServer [0-9999]");
-        }
-
-        int portNo = Integer.parseInt(args[0]);
-        
-        if (OS.indexOf("win") >= 0) {
-            new ProxyServer(CWD + "\\src\\proxy\\config.txt", portNo);
-        } else {
-            new ProxyServer(CWD + "/src/proxy/config.txt", portNo);
-        } 
-        
-        
-    } 
     
     /**
      * 

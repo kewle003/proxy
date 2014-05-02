@@ -156,6 +156,9 @@ public class HTTPResponse {
                     } 
                 }
                 
+                //Connect to the server
+                conn.connect();
+                
                 //Do we have Set-Cookie in request header?
                 if (conn.getHeaderField("Set-Cookie") != null) {
                     //Do we already have this cookie?
@@ -239,8 +242,6 @@ public class HTTPResponse {
                     if (conn.getContentType().contains("text/html")) {
                         isText = true;
                         if (!chunked) { 
-                            
-                            conn.connect();
                             //Create our InputSocket buffer
                             BufferedReader inLine = new BufferedReader(new InputStreamReader(conn.getInputStream()));
                             StringBuffer init = new StringBuffer("");
@@ -257,7 +258,6 @@ public class HTTPResponse {
                             }                    
                             data = new StringBuilder(new String(init.toString().getBytes(), "UTF-8")); 
                         } else {
-                            conn.connect();
                             ByteArrayOutputStream sink = new ByteArrayOutputStream();
                             //Write the chunked data
                             writeChunked(conn.getInputStream(), sink);  

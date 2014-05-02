@@ -96,7 +96,7 @@ public class ProxyThread extends Thread {
                }
                             
                //Set the disAllowed MIME types for the Request.
-               httpReq.setDisAllowedMIME(ProxyServer.getConfigFile().getDissallowedDomains().get(httpReq.getHost()));
+               httpReq.setDisAllowedMIME(ProxyServerEngine.getConfigFile().getDissallowedDomains().get(httpReq.getHost()));
                
                //Verify if we have a blocked site
                if (httpReq.getDisAllowedMIME().contains("all")) {
